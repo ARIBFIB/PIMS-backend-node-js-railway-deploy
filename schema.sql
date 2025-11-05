@@ -124,7 +124,7 @@ LEFT JOIN users u2 ON r.updated_by = u2.id;
 CREATE OR REPLACE VIEW recipe_with_costs AS
 SELECT 
   r.*,
-  (r.total_cost / r.servings) as cost_per_serving,
+  (r.total_cost / r.servings) as calculated_cost_per_serving,
   (SELECT COALESCE(SUM(ac.amount), 0) FROM recipe_additional_costs ac WHERE ac.recipe_id = r.id AND ac.applies_to = 'total') as additional_fixed_costs,
   (SELECT COALESCE(SUM(ac.amount * r.total_ingredient_cost / 100), 0) FROM recipe_additional_costs ac WHERE ac.recipe_id = r.id AND ac.type = 'percentage') as additional_percentage_costs
 FROM recipes r;
