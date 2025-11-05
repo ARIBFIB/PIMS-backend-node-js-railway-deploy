@@ -16,9 +16,9 @@ const app = express();
 // Security middleware
 app.use(helmet());
 
-// CORS configuration - simplified and more permissive for testing
+// CORS configuration - explicit for Netlify frontend
 app.use(cors({
-  origin: true, // Reflect the origin from the request
+  origin: ['https://inquisitive-cannoli-1a02dc.netlify.app', 'http://localhost:5173'],
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization'],
@@ -48,6 +48,15 @@ app.get('/health', (req, res) => {
     timestamp: new Date().toISOString(),
     service: 'ProdX Backend',
     version: '1.0.0'
+  });
+});
+
+// Environment check endpoint
+app.get('/env-check', (req, res) => {
+  res.json({
+    FRONTEND_URL: process.env.FRONTEND_URL,
+    NODE_ENV: process.env.NODE_ENV,
+    CORS_ORIGIN: ['https://inquisitive-cannoli-1a02dc.netlify.app', 'http://localhost:5173']
   });
 });
 
