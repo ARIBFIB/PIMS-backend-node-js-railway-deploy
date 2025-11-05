@@ -19,7 +19,13 @@ app.use(helmet());
 // CORS configuration
 const allowedOrigins = process.env.FRONTEND_URL 
   ? process.env.FRONTEND_URL.split(',').map(origin => origin.trim())
-  : ['http://localhost:5173', 'https://inquisitive-cannoli-1a02dc.netlify.app'];
+  : [
+      'http://localhost:5173',
+      'http://127.0.0.1:5173',
+      'http://localhost:5500',
+      'http://127.0.0.1:5500',
+      'https://inquisitive-cannoli-1a02dc.netlify.app'
+    ];
 
 app.use(cors({
   origin: function (origin, callback) {
