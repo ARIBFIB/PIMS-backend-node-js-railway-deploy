@@ -16,6 +16,39 @@ const app = express();
 // Security middleware
 app.use(helmet());
 
+// Explicitly handle preflight requests for all routes
+app.options('*', cors({
+  origin: function (origin, callback) {
+    // Allow requests with no origin (like mobile apps or curl requests)
+    if (!origin) return callback(null, true);
+    
+    // Always allow Netlify frontend in production
+    if (origin === 'https://inquisitive-cannoli-1a02dc.netlify.app') {
+      return callback(null, true);
+    }
+    
+    const allowedOrigins = process.env.FRONTEND_URL 
+      ? process.env.FRONTEND_URL.split(',').map(origin => origin.trim())
+      : [
+          'http://localhost:5173',
+          'http://127.0.0.1:5173',
+          'http://localhost:5500',
+          'http://127.0.0.1:5500',
+          'https://inquisitive-cannoli-1a02dc.netlify.app'
+        ];
+    
+    if (allowedOrigins.indexOf(origin) !== -1) {
+      callback(null, true);
+    } else {
+      callback(new Error('Not allowed by CORS'));
+    }
+  },
+  credentials: true,
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH'],
+  allowedHeaders: ['Content-Type', 'Authorization'],
+  optionsSuccessStatus: 200
+}));
+
 // CORS configuration
 const allowedOrigins = process.env.FRONTEND_URL 
   ? process.env.FRONTEND_URL.split(',').map(origin => origin.trim())
@@ -32,6 +65,11 @@ app.use(cors({
     // Allow requests with no origin (like mobile apps or curl requests)
     if (!origin) return callback(null, true);
     
+    // Always allow Netlify frontend in production
+    if (origin === 'https://inquisitive-cannoli-1a02dc.netlify.app') {
+      return callback(null, true);
+    }
+    
     if (allowedOrigins.indexOf(origin) !== -1) {
       callback(null, true);
     } else {
@@ -40,7 +78,8 @@ app.use(cors({
   },
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH'],
-  allowedHeaders: ['Content-Type', 'Authorization']
+  allowedHeaders: ['Content-Type', 'Authorization'],
+  optionsSuccessStatus: 200
 }));
 
 // Rate limiting
@@ -57,6 +96,16 @@ app.use(express.urlencoded({ extended: true }));
 
 // Static files
 app.use('/uploads', express.static('uploads'));
+
+// Health check endpoint
+app.get('/health', (req, res) => {
+  res.json({
+    status: 'OK',
+    timestamp: new Date().toISOString(),
+    service: 'ProdX Backend',
+    version: '1.0.0'
+  });
+});
 
 // API routes
 app.use('/api/auth', authRoutes);
