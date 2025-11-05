@@ -16,18 +16,9 @@ const app = express();
 // Security middleware
 app.use(helmet());
 
-// Handle preflight requests explicitly
-app.options('*', (req, res) => {
-  res.header('Access-Control-Allow-Origin', 'https://inquisitive-cannoli-1a02dc.netlify.app');
-  res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, PATCH, OPTIONS');
-  res.header('Access-Control-Allow-Headers', 'Content-Type, Authorization');
-  res.header('Access-Control-Allow-Credentials', 'true');
-  res.sendStatus(200);
-});
-
 // CORS configuration - explicit for Netlify frontend
 app.use(cors({
-  origin: 'https://inquisitive-cannoli-1a02dc.netlify.app',
+  origin: ['https://inquisitive-cannoli-1a02dc.netlify.app', 'http://localhost:5173'],
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization'],
