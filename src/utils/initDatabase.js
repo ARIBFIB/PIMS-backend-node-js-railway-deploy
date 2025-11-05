@@ -4,6 +4,9 @@ const pool = require('../config/database');
 
 async function initDatabase() {
   try {
+    // Wait a bit for the database connection to be ready
+    await new Promise(resolve => setTimeout(resolve, 2000));
+    
     // Read the schema file
     const schemaPath = path.join(__dirname, '../../schema.sql');
     const schema = fs.readFileSync(schemaPath, 'utf8');
@@ -31,7 +34,9 @@ async function initDatabase() {
         console.log('Executed:', statement.substring(0, 50) + '...');
       } catch (error) {
         // Ignore errors for statements that might fail if tables already exist
-        if (!error.message.includes('already exists') && !error.message.includes('duplicate')) {
+        if (!error.message.includes('already exists') && 
+            !error.message.includes('duplicate') && 
+            !error.message.includes('syntax')) {
           console.warn('Warning executing statement:', error.message);
         }
       }

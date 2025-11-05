@@ -9,7 +9,10 @@ const config = {
   port: process.env.MYSQLPORT || process.env.DB_PORT || 3306,
   connectionLimit: 10,
   acquireTimeout: 60000,
-  timeout: 60000
+  timeout: 60000,
+  // Add these options to handle Railway's authentication
+  allowPublicKeyRetrieval: true,
+  ssl: false
 };
 
 const pool = mariadb.createPool(config);
