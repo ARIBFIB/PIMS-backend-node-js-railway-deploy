@@ -8,6 +8,7 @@ async function setupDatabase() {
     // First connect without specifying database to create it
     connection = await mysql.createConnection({
       host: process.env.DB_HOST || 'localhost',
+      port: process.env.DB_PORT || 3306,
       user: process.env.DB_USER || 'root',
       password: process.env.DB_PASSWORD || '',
     });
@@ -24,6 +25,7 @@ async function setupDatabase() {
     // Now connect to the specific database
     connection = await mysql.createConnection({
       host: process.env.DB_HOST || 'localhost',
+      port: process.env.DB_PORT || 3306,
       user: process.env.DB_USER || 'root',
       password: process.env.DB_PASSWORD || '',
       database: process.env.DB_NAME || 'pims',
@@ -99,13 +101,10 @@ async function setupDatabase() {
     
     console.log('Tables created successfully');
     
-    // Insert default admin user
-    const bcrypt = require('bcryptjs');
-    const hashedPassword = await bcrypt.hash('admin123', 10);
-    
+    // Insert default admin user with plain text password for testing
     await connection.execute(
       `INSERT IGNORE INTO users (name, email, password, role) VALUES (?, ?, ?, ?)`,
-      ['Admin User', 'admin@example.com', hashedPassword, 'admin']
+      ['Admin User', 'admin@example.com', 'admin123', 'admin']  // Plain text password
     );
     
     console.log('Default admin user created (email: admin@example.com, password: admin123)');

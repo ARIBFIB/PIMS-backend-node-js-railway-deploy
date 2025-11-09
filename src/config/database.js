@@ -1,19 +1,17 @@
 const mysql = require('mysql2/promise');
 require('dotenv').config();
 
-// Database connection configuration with enhanced settings
+// Database connection configuration with Railway-compatible settings
 const dbConfig = {
   host: process.env.DB_HOST || 'localhost',
+  port: process.env.DB_PORT || 3306,
   user: process.env.DB_USER || 'root',
   password: process.env.DB_PASSWORD || '',
   database: process.env.DB_NAME || 'pims',
   waitForConnections: true,
   connectionLimit: 10,
   queueLimit: 0,
-  acquireTimeout: 60000,      // 60 seconds to acquire connection
-  timeout: 60000,             // 60 seconds for query execution
-  reconnect: true,             // Automatically reconnect
-  idleTimeout: 300000,         // 5 minutes idle timeout
+  // Removed invalid options that cause warnings
   enableKeepAlive: true,
   keepAliveInitialDelay: 0,
 };
