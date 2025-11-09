@@ -39,7 +39,7 @@ const corsOptions = {
 // Apply CORS middleware
 app.use(cors(corsOptions));
 
-// Add a specific CORS handler for preflight requests
+// Add a specific CORS handler for preflight requests (fixed)
 app.options('*', cors(corsOptions));
 
 // Rate limiting

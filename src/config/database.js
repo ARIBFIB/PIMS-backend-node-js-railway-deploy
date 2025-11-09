@@ -4,11 +4,11 @@ require('dotenv').config();
 // Database connection configuration using Railway's standard environment variables
 // Railway automatically provides these variables when you provision a MySQL database
 const dbConfig = {
-  host: process.env.MYSQLHOST || 'shortline.proxy.rlwy.net',
-  port: process.env.MYSQLPORT || 34306,
-  user: process.env.MYSQLUSER || 'root',
-  password: process.env.MYSQLPASSWORD || 'NSsYtayIZiLehwcekexDHEEcowKqAJzY',
-  database: process.env.MYSQLDATABASE || 'railway',
+  host: process.env.MYSQLHOST || process.env.DB_HOST || 'mysql-odu5.railway.internal',
+  port: process.env.MYSQLPORT || process.env.DB_PORT || 3306,
+  user: process.env.MYSQLUSER || process.env.DB_USER || 'root',
+  password: process.env.MYSQLPASSWORD || process.env.DB_PASSWORD || 'NSsYtayIZiLehwcekexDHEEcowKqAJzY',
+  database: process.env.MYSQLDATABASE || process.env.DB_NAME || 'railway',
   waitForConnections: true,
   connectionLimit: 10,
   queueLimit: 0,
