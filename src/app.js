@@ -16,20 +16,11 @@ const errorHandler = require('./middleware/errorHandler');
 
 const app = express();
 
-// // CORS configuration - explicit for Netlify frontend
-// app.use(cors({
-//   origin: ['https://inquisitive-cannoli-1a02dc.netlify.app', 'http://localhost:5173'],
-//   credentials: true,
-//   methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
-//   allowedHeaders: ['Content-Type', 'Authorization'],
-//   exposedHeaders: ['Authorization'],
-//   optionsSuccessStatus: 200
-// }));
-
 // Configure CORS with specific options
 const corsOptions = {
   origin: [
     'https://inquisitive-cannoli-1a02dc.netlify.app',
+    'https://69103f69dcfd481c4c5af487--inquisitive-cannoli-1a02dc.netlify.app',
     'http://localhost:3000',
     'http://127.0.0.1:3000',
     'http://localhost:5173',
@@ -47,6 +38,9 @@ const corsOptions = {
 
 // Apply CORS middleware
 app.use(cors(corsOptions));
+
+// Add a specific CORS handler for preflight requests
+app.options('*', cors(corsOptions));
 
 // Rate limiting
 const limiter = rateLimit({

@@ -9,7 +9,8 @@
     "setup-db": "node setup-database.js",
     "test": "node tests/api.test.js",
     "test-db": "node test-db-connection.js",
-    "debug-db": "node debug-db-connection.js"
+    "debug-db": "node debug-db-connection.js",
+    "create-db-user": "node create-db-user.js"
   },
   "keywords": [],
   "author": "",

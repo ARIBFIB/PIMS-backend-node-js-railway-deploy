@@ -1,21 +1,20 @@
 const mysql = require('mysql2/promise');
 require('dotenv').config();
 
-// Database connection configuration with Railway-compatible settings
+// Database connection configuration using Railway's standard environment variables
+// Railway automatically provides these variables when you provision a MySQL database
 const dbConfig = {
-  host: process.env.MYSQLHOST || process.env.DB_HOST || 'localhost',
-  port: process.env.MYSQLPORT || process.env.DB_PORT || 3306,
-  user: process.env.MYSQLUSER || process.env.DB_USER || 'root',
-  password: process.env.MYSQLPASSWORD || process.env.DB_PASSWORD || '',
-  database: process.env.MYSQLDATABASE || process.env.DB_NAME || 'pims',
+  host: process.env.MYSQLHOST || 'shortline.proxy.rlwy.net',
+  port: process.env.MYSQLPORT || 34306,
+  user: process.env.MYSQLUSER || 'root',
+  password: process.env.MYSQLPASSWORD || 'NSsYtayIZiLehwcekexDHEEcowKqAJzY',
+  database: process.env.MYSQLDATABASE || 'railway',
   waitForConnections: true,
   connectionLimit: 10,
   queueLimit: 0,
+  connectTimeout: 10000, // 10 seconds
   enableKeepAlive: true,
   keepAliveInitialDelay: 0,
-  // Add connection timeout settings to prevent hanging
-  connectTimeout: 10000, // 10 seconds
-  acquireTimeout: 10000, // 10 seconds
 };
 
 console.log('Database configuration:', {
@@ -62,7 +61,11 @@ const initializeDatabase = async (retryCount = 0) => {
       console.log(`⚠️  Retrying database connection in ${Math.round(delay/1000)} seconds... (Attempt ${retryCount + 1}/${maxRetries})`);
       setTimeout(() => initializeDatabase(retryCount + 1), delay);
     } else {
-      console.error('❌ Database connection failed after maximum retries. Please check your database credentials and permissions.');
+      console.error('❌ Database connection failed after maximum retries.');
+      console.error('💡 Troubleshooting tips:');
+      console.error('1. Check Railway environment variables (MYSQLHOST, MYSQLUSER, MYSQLPASSWORD, MYSQLDATABASE)');
+      console.error('2. Verify database user permissions - root user may need additional privileges');
+      console.error('3. Consider creating a dedicated database user with broader permissions');
       process.exit(1);
     }
   }
