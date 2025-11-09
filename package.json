@@ -8,7 +8,8 @@
     "dev": "nodemon server.js",
     "setup-db": "node setup-database.js",
     "test": "node tests/api.test.js",
-    "test-db": "node test-db-connection.js"
+    "test-db": "node test-db-connection.js",
+    "debug-db": "node debug-db-connection.js"
   },
   "keywords": [],
   "author": "",

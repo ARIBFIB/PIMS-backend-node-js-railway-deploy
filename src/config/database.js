@@ -13,7 +13,17 @@ const dbConfig = {
   queueLimit: 0,
   enableKeepAlive: true,
   keepAliveInitialDelay: 0,
+  // Add connection timeout settings to prevent hanging
+  connectTimeout: 10000, // 10 seconds
+  acquireTimeout: 10000, // 10 seconds
 };
+
+console.log('Database configuration:', {
+  host: dbConfig.host,
+  port: dbConfig.port,
+  user: dbConfig.user,
+  database: dbConfig.database,
+});
 
 // Create connection pool
 const pool = mysql.createPool(dbConfig);
@@ -21,6 +31,7 @@ const pool = mysql.createPool(dbConfig);
 // Test database connection
 const testConnection = async () => {
   try {
+    console.log('Attempting to connect to database...');
     const connection = await pool.getConnection();
     await connection.ping();
     connection.release();
@@ -28,16 +39,32 @@ const testConnection = async () => {
     return true;
   } catch (error) {
     console.error('❌ Database connection failed:', error.message);
+    console.error('Error code:', error.code);
+    console.error('Error errno:', error.errno);
+    if (error.sqlState) {
+      console.error('SQL State:', error.sqlState);
+    }
     return false;
   }
 };
 
-// Initialize database connection with retry logic
-const initializeDatabase = async () => {
+// Initialize database connection with retry logic and backoff
+const initializeDatabase = async (retryCount = 0) => {
+  const maxRetries = 10;
+  const baseDelay = 5000; // 5 seconds
+  const maxDelay = 30000; // 30 seconds
+  
   const isConnected = await testConnection();
   if (!isConnected) {
-    console.log('⚠️  Retrying database connection in 5 seconds...');
-    setTimeout(initializeDatabase, 5000);
+    if (retryCount < maxRetries) {
+      // Exponential backoff with jitter
+      const delay = Math.min(baseDelay * Math.pow(1.5, retryCount) + Math.random() * 1000, maxDelay);
+      console.log(`⚠️  Retrying database connection in ${Math.round(delay/1000)} seconds... (Attempt ${retryCount + 1}/${maxRetries})`);
+      setTimeout(() => initializeDatabase(retryCount + 1), delay);
+    } else {
+      console.error('❌ Database connection failed after maximum retries. Please check your database credentials and permissions.');
+      process.exit(1);
+    }
   }
 };
 
