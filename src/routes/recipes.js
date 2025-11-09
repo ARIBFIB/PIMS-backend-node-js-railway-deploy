@@ -1,25 +1,23 @@
 const express = require('express');
+const { body } = require('express-validator');
+const recipeController = require('../controllers/recipeController');
+const { authenticate } = require('../middleware/auth');
+
 const router = express.Router();
-const RecipeController = require('../controllers/recipeController');
-const auth = require('../middleware/auth');
-const rbac = require('../middleware/rbac');
 
-// Get recipe categories
-router.get('/categories', auth, RecipeController.getCategories);
-
-// Get all recipes
-router.get('/', auth, RecipeController.getAllRecipes);
-
-// Get recipe by ID
-router.get('/:id', auth, RecipeController.getRecipeById);
-
-// Create recipe (admin and staff)
-router.post('/', auth, rbac(['admin', 'staff']), RecipeController.createRecipe);
-
-// Update recipe (admin and staff)
-router.put('/:id', auth, rbac(['admin', 'staff']), RecipeController.updateRecipe);
-
-// Delete recipe (admin only)
-router.delete('/:id', auth, rbac(['admin']), RecipeController.deleteRecipe);
+router.get('/', authenticate, recipeController.getAllRecipes);
+router.get('/:id', authenticate, recipeController.getRecipeById);
+router.get('/:id/calc', authenticate, recipeController.calculateRecipeMaterials);
+router.post('/', authenticate, [
+  body('name').notEmpty().withMessage('Recipe name is required'),
+  body('category').notEmpty().withMessage('Category is required'),
+  body('ingredients').isArray({ min: 1 }).withMessage('At least one ingredient is required')
+], recipeController.createRecipe);
+router.put('/:id', authenticate, [
+  body('name').notEmpty().withMessage('Recipe name is required'),
+  body('category').notEmpty().withMessage('Category is required'),
+  body('ingredients').isArray({ min: 1 }).withMessage('At least one ingredient is required')
+], recipeController.updateRecipe);
+router.delete('/:id', authenticate, recipeController.deleteRecipe);
 
 module.exports = router;

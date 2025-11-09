@@ -1,15 +1,12 @@
 const express = require('express');
+const { body } = require('express-validator');
+const authController = require('../controllers/authController');
+
 const router = express.Router();
-const AuthController = require('../controllers/authController');
-const auth = require('../middleware/auth');
 
-// Register
-router.post('/register', AuthController.register);
-
-// Login
-router.post('/login', AuthController.login);
-
-// Get profile (protected)
-router.get('/profile', auth, AuthController.getProfile);
+router.post('/login', [
+  body('email').isEmail().withMessage('Please enter a valid email'),
+  body('password').notEmpty().withMessage('Password is required')
+], authController.login);
 
 module.exports = router;

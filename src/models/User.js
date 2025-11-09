@@ -1,114 +1,38 @@
 const pool = require('../config/database');
-const bcrypt = require('bcryptjs');
-const { formatResponse } = require('../utils/helpers');
+// Removed bcrypt import since we're removing password hashing
 
 class User {
-  static async create(userData) {
-    const { name, email, password, role = 'staff' } = userData;
-    
-    try {
-      // Hash password
-      const salt = await bcrypt.genSalt(10);
-      const hashedPassword = await bcrypt.hash(password, salt);
-      
-      // Insert user
-      const result = await pool.query(
-        'INSERT INTO users (name, email, password, role) VALUES (?, ?, ?, ?)',
-        [name, email, hashedPassword, role]
-      );
-      
-      // Get created user
-      const newUser = await this.findById(result.insertId);
-      
-      return formatResponse(true, 'User created successfully', {
-        id: newUser.id,
-        name: newUser.name,
-        email: newUser.email,
-        role: newUser.role
-      });
-    } catch (error) {
-      if (error.code === 'ER_DUP_ENTRY') {
-        return formatResponse(false, 'Email already exists');
-      }
-      throw error;
-    }
-  }
-  
   static async findByEmail(email) {
     try {
-      const rows = await pool.query('SELECT * FROM users WHERE email = ?', [email]);
-      return rows.length > 0 ? rows[0] : null;
-    } catch (error) {
-      throw error;
-    }
-  }
-  
-  static async findById(id) {
-    try {
-      const rows = await pool.query('SELECT id, name, email, role, created_at FROM users WHERE id = ?', [id]);
-      return rows.length > 0 ? rows[0] : null;
-    } catch (error) {
-      throw error;
-    }
-  }
-  
-  static async comparePassword(candidatePassword, hashedPassword) {
-    return await bcrypt.compare(candidatePassword, hashedPassword);
-  }
-  
-  static async getAll(page = 0, size = 10) {
-    try {
-      const { limit, offset } = require('../utils/helpers').getPagination(page, size);
-      
-      const rows = await pool.query(
-        'SELECT id, name, email, role, created_at FROM users ORDER BY created_at DESC LIMIT ? OFFSET ?',
-        [limit, offset]
+      const [rows] = await pool.execute(
+        'SELECT * FROM users WHERE email = ?',
+        [email]
       );
-      
-      const countResult = await pool.query('SELECT COUNT(*) as total FROM users');
-      const totalItems = countResult[0].total;
-      
-      return require('../utils/helpers').getPagingData(
-        { count: totalItems, rows },
-        page,
-        limit
-      );
+      return rows[0] || null;
     } catch (error) {
       throw error;
     }
   }
-  
-  static async update(id, userData) {
-    const { name, email, role } = userData;
+
+  static async create(userData) {
+    const { name, email, password, role = 'operator' } = userData;
+    // Store password as plain text for testing purposes
+    const plainPassword = password;
     
     try {
-      await pool.query(
-        'UPDATE users SET name = ?, email = ?, role = ? WHERE id = ?',
-        [name, email, role, id]
+      const [result] = await pool.execute(
+        'INSERT INTO users (name, email, password, role) VALUES (?, ?, ?, ?)',
+        [name, email, plainPassword, role]
       );
-      
-      const updatedUser = await this.findById(id);
-      return formatResponse(true, 'User updated successfully', updatedUser);
+      return { id: result.insertId, name, email, role };
     } catch (error) {
-      if (error.code === 'ER_DUP_ENTRY') {
-        return formatResponse(false, 'Email already exists');
-      }
       throw error;
     }
   }
-  
-  static async delete(id) {
-    try {
-      const result = await pool.query('DELETE FROM users WHERE id = ?', [id]);
-      
-      if (result.affectedRows === 0) {
-        return formatResponse(false, 'User not found');
-      }
-      
-      return formatResponse(true, 'User deleted successfully');
-    } catch (error) {
-      throw error;
-    }
+
+  // Simple string comparison instead of bcrypt comparison
+  static async verifyPassword(plainPassword, storedPassword) {
+    return plainPassword === storedPassword;
   }
 }
 

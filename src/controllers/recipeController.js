@@ -1,255 +1,73 @@
-const { Recipe } = require('../models/Recipe');
-const { User } = require('../models/User');
-const { Inventory } = require('../models/Inventory');
-const { validationResult } = require('express-validator');
-const { recipeValidation, recipeUpdateValidation } = require('../validators/recipeValidation');
-
-const createRecipe = async (req, res) => {
-  try {
-    await Promise.all(recipeValidation.map(validation => validation.run(req)));
-    const errors = validationResult(req);
-    if (!errors.isEmpty()) {
-      return res.status(400).json({
-        success: false,
-        message: 'Validation errors',
-        errors: errors.array()
-      });
-    }
-
-    const {
-      name,
-      description,
-      category,
-      prepTime,
-      cookTime,
-      servings,
-      difficulty,
-      instructions,
-      ingredients,
-      additionalCosts,
-      notes
-    } = req.body;
-
-    const userId = req.user.id;
-
-    // Calculate costs
-    let totalIngredientCost = 0;
-    let totalAdditionalCost = 0;
-
-    // Calculate ingredient costs
-    for (const ingredient of ingredients) {
-      // Note: We'll need to adjust this when we have the proper Inventory model
-      // For now, we'll skip the cost calculation
-    }
-
-    // Calculate additional costs
-    for (const cost of additionalCosts || []) {
-      if (cost.type === 'fixed') {
-        totalAdditionalCost += cost.amount;
-      } else if (cost.type === 'percentage') {
-        totalAdditionalCost += (totalIngredientCost * cost.amount) / 100;
-      }
-    }
-
-    const totalCost = totalIngredientCost + totalAdditionalCost;
-    const costPerServing = totalCost / servings;
-
-    const recipeData = {
-      name,
-      description,
-      category,
-      prepTime,
-      cookTime,
-      servings,
-      difficulty,
-      instructions,
-      ingredients,
-      additionalCosts,
-      notes,
-      totalCost,
-      totalIngredientCost,
-      costPerServing,
-      created_by: userId
-    };
-
-    const result = await Recipe.create(recipeData);
-
-    if (result.success) {
-      res.status(201).json({
-        success: true,
-        message: 'Recipe created successfully',
-        data: result.data
-      });
-    } else {
-      res.status(400).json({
-        success: false,
-        message: result.message
-      });
-    }
-  } catch (error) {
-    console.error('Error creating recipe:', error);
-    res.status(500).json({
-      success: false,
-      message: 'Failed to create recipe'
-    });
-  }
-};
+const Recipe = require('../models/Recipe');
 
 const getAllRecipes = async (req, res) => {
   try {
-    const page = parseInt(req.query.page) || 0;
-    const size = parseInt(req.query.size) || 10;
-    const category = req.query.category;
-    const search = req.query.search;
-
-    const options = {
-      page,
-      size,
-      category,
-      search
-    };
-
-    const data = await Recipe.findAndCountAll(options);
-
-    res.json({
-      success: true,
-      data: {
-        items: data.rows,
-        totalItems: Number(data.count),
-        totalPages: Math.ceil(Number(data.count) / size),
-        currentPage: page
-      }
-    });
+    const recipes = await Recipe.getAll();
+    res.json(recipes);
   } catch (error) {
-    console.error('Error fetching recipes:', error);
-    res.status(500).json({
-      success: false,
-      message: 'Failed to fetch recipes'
-    });
+    console.error('Get recipes error:', error);
+    res.status(500).json({ message: 'Internal server error' });
   }
 };
 
 const getRecipeById = async (req, res) => {
   try {
     const { id } = req.params;
-    
     const recipe = await Recipe.findById(id);
-
+    
     if (!recipe) {
-      return res.status(404).json({
-        success: false,
-        message: 'Recipe not found'
-      });
+      return res.status(404).json({ message: 'Recipe not found' });
     }
-
-    res.json({
-      success: true,
-      data: recipe
-    });
+    
+    res.json(recipe);
   } catch (error) {
-    console.error('Error fetching recipe:', error);
-    res.status(500).json({
-      success: false,
-      message: 'Failed to fetch recipe'
+    console.error('Get recipe error:', error);
+    res.status(500).json({ message: 'Internal server error' });
+  }
+};
+
+const createRecipe = async (req, res) => {
+  try {
+    const { name, category, ingredients } = req.body;
+    
+    // Validate input
+    if (!name || !category || !ingredients || ingredients.length === 0) {
+      return res.status(400).json({ message: 'All fields are required' });
+    }
+    
+    const recipe = await Recipe.create({
+      name,
+      category,
+      ingredients
     });
+    
+    res.status(201).json({ message: 'Recipe created successfully', recipe });
+  } catch (error) {
+    console.error('Create recipe error:', error);
+    res.status(500).json({ message: 'Internal server error' });
   }
 };
 
 const updateRecipe = async (req, res) => {
   try {
     const { id } = req.params;
-    const userId = req.user.id;
-
-    const recipe = await Recipe.findById(id);
-    if (!recipe) {
-      return res.status(404).json({
-        success: false,
-        message: 'Recipe not found'
-      });
+    const { name, category, ingredients } = req.body;
+    
+    // Validate input
+    if (!name || !category || !ingredients || ingredients.length === 0) {
+      return res.status(400).json({ message: 'All fields are required' });
     }
-
-    await Promise.all(recipeUpdateValidation.map(validation => validation.run(req)));
-    const errors = validationResult(req);
-    if (!errors.isEmpty()) {
-      return res.status(400).json({
-        success: false,
-        message: 'Validation errors',
-        errors: errors.array()
-      });
-    }
-
-    const {
+    
+    const recipe = await Recipe.update(id, {
       name,
-      description,
       category,
-      prepTime,
-      cookTime,
-      servings,
-      difficulty,
-      instructions,
-      ingredients,
-      additionalCosts,
-      notes
-    } = req.body;
-
-    // Recalculate costs
-    let totalIngredientCost = 0;
-    let totalAdditionalCost = 0;
-
-    for (const ingredient of ingredients) {
-      // Note: We'll need to adjust this when we have the proper Inventory model
-      // For now, we'll skip the cost calculation
-    }
-
-    for (const cost of additionalCosts || []) {
-      if (cost.type === 'fixed') {
-        totalAdditionalCost += cost.amount;
-      } else if (cost.type === 'percentage') {
-        totalAdditionalCost += (totalIngredientCost * cost.amount) / 100;
-      }
-    }
-
-    const totalCost = totalIngredientCost + totalAdditionalCost;
-    const costPerServing = totalCost / servings;
-
-    const recipeData = {
-      name,
-      description,
-      category,
-      prepTime,
-      cookTime,
-      servings,
-      difficulty,
-      instructions,
-      ingredients,
-      additionalCosts,
-      notes,
-      totalCost,
-      totalIngredientCost,
-      costPerServing,
-      updated_by: userId
-    };
-
-    const result = await Recipe.update(id, recipeData);
-
-    if (result.success) {
-      res.json({
-        success: true,
-        message: 'Recipe updated successfully',
-        data: result.data
-      });
-    } else {
-      res.status(400).json({
-        success: false,
-        message: result.message
-      });
-    }
-  } catch (error) {
-    console.error('Error updating recipe:', error);
-    res.status(500).json({
-      success: false,
-      message: 'Failed to update recipe'
+      ingredients
     });
+    
+    res.json({ message: 'Recipe updated successfully', recipe });
+  } catch (error) {
+    console.error('Update recipe error:', error);
+    res.status(500).json({ message: 'Internal server error' });
   }
 };
 
@@ -257,60 +75,38 @@ const deleteRecipe = async (req, res) => {
   try {
     const { id } = req.params;
     
-    const recipe = await Recipe.findById(id);
-    if (!recipe) {
-      return res.status(404).json({
-        success: false,
-        message: 'Recipe not found'
-      });
-    }
-
-    const result = await Recipe.destroy(id);
+    await Recipe.delete(id);
     
-    if (result.success) {
-      res.json({
-        success: true,
-        message: 'Recipe deleted successfully'
-      });
-    } else {
-      res.status(400).json({
-        success: false,
-        message: result.message
-      });
-    }
+    res.json({ message: 'Recipe deleted successfully' });
   } catch (error) {
-    console.error('Error deleting recipe:', error);
-    res.status(500).json({
-      success: false,
-      message: 'Failed to delete recipe'
-    });
+    console.error('Delete recipe error:', error);
+    res.status(500).json({ message: 'Internal server error' });
   }
 };
 
-const getCategories = async (req, res) => {
+const calculateRecipeMaterials = async (req, res) => {
   try {
-    // This is a simplified implementation
-    // In a real application, you would query the database for distinct categories
-    const categories = ['Appetizers', 'Main Course', 'Desserts', 'Beverages', 'Snacks'];
+    const { id } = req.params;
+    const { qty } = req.query;
     
-    res.json({
-      success: true,
-      data: categories
-    });
+    if (!qty || isNaN(qty) || parseFloat(qty) <= 0) {
+      return res.status(400).json({ message: 'Valid quantity is required' });
+    }
+    
+    const calculation = await Recipe.calculateMaterials(id, parseFloat(qty));
+    
+    res.json(calculation);
   } catch (error) {
-    console.error('Error fetching categories:', error);
-    res.status(500).json({
-      success: false,
-      message: 'Failed to fetch categories'
-    });
+    console.error('Calculate recipe materials error:', error);
+    res.status(500).json({ message: 'Internal server error' });
   }
 };
 
 module.exports = {
-  createRecipe,
   getAllRecipes,
   getRecipeById,
+  createRecipe,
   updateRecipe,
   deleteRecipe,
-  getCategories
+  calculateRecipeMaterials
 };

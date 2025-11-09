@@ -1,23 +1,21 @@
 const jwt = require('../utils/jwt');
 
-module.exports = (req, res, next) => {
+const authenticate = (req, res, next) => {
   try {
     const token = req.header('Authorization')?.replace('Bearer ', '');
     
     if (!token) {
-      return res.status(401).json({
-        success: false,
-        message: 'Access denied. No token provided.'
-      });
+      return res.status(401).json({ message: 'Access denied. No token provided.' });
     }
     
     const decoded = jwt.verify(token);
     req.user = decoded;
     next();
   } catch (error) {
-    res.status(401).json({
-      success: false,
-      message: 'Invalid token.'
-    });
+    res.status(401).json({ message: 'Invalid token.' });
   }
+};
+
+module.exports = {
+  authenticate
 };

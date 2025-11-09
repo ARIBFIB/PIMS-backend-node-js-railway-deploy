@@ -1,30 +1,52 @@
 const express = require('express');
 const cors = require('cors');
 const helmet = require('helmet');
+const morgan = require('morgan');
 const rateLimit = require('express-rate-limit');
-require('dotenv').config();
 
+// Import routes
 const authRoutes = require('./routes/auth');
-const inventoryRoutes = require('./routes/inventory');
-const analyticsRoutes = require('./routes/analytics');
-const productionRoutes = require('./routes/production');
-const userRoutes = require('./routes/users');
+const materialRoutes = require('./routes/materials');
 const recipeRoutes = require('./routes/recipes');
+const productionRoutes = require('./routes/production');
+const reportRoutes = require('./routes/reports');
+
+// Error handling middleware
+const errorHandler = require('./middleware/errorHandler');
 
 const app = express();
 
-// Security middleware
-app.use(helmet());
+// // CORS configuration - explicit for Netlify frontend
+// app.use(cors({
+//   origin: ['https://inquisitive-cannoli-1a02dc.netlify.app', 'http://localhost:5173'],
+//   credentials: true,
+//   methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
+//   allowedHeaders: ['Content-Type', 'Authorization'],
+//   exposedHeaders: ['Authorization'],
+//   optionsSuccessStatus: 200
+// }));
 
-// CORS configuration - explicit for Netlify frontend
-app.use(cors({
-  origin: ['https://inquisitive-cannoli-1a02dc.netlify.app', 'http://localhost:5173'],
+// Configure CORS with specific options
+const corsOptions = {
+  origin: [
+    'https://inquisitive-cannoli-1a02dc.netlify.app',
+    'http://localhost:3000',
+    'http://127.0.0.1:3000',
+    'http://localhost:5173',
+    'http://127.0.0.1:5173',
+    'http://localhost:5500',
+    'http://127.0.0.1:5500',
+    'http://localhost:8080',
+    'http://127.0.0.1:8080'
+  ],
   credentials: true,
-  methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization'],
-  exposedHeaders: ['Authorization'],
   optionsSuccessStatus: 200
-}));
+};
+
+// Apply CORS middleware
+app.use(cors(corsOptions));
 
 // Rate limiting
 const limiter = rateLimit({
@@ -32,67 +54,32 @@ const limiter = rateLimit({
   max: 100, // limit each IP to 100 requests per windowMs
   message: 'Too many requests from this IP, please try again later.'
 });
-app.use('/api/', limiter);
 
-// Body parsing middleware
-app.use(express.json({ limit: '10mb' }));
+// Middlewares
+app.use(helmet());
+app.use(morgan('combined'));
+app.use(limiter);
+app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
-// Static files
-app.use('/uploads', express.static('uploads'));
-
-// Root endpoint
-app.get('/', (req, res) => {
-  res.json({
-    message: 'ProdX Backend API',
-    status: 'running',
-    timestamp: new Date().toISOString()
-  });
-});
+// Routes
+app.use('/api/auth', authRoutes);
+app.use('/api/materials', materialRoutes);
+app.use('/api/recipes', recipeRoutes);
+app.use('/api/production-logs', productionRoutes);
+app.use('/api/reports', reportRoutes);
 
 // Health check endpoint
 app.get('/health', (req, res) => {
-  res.json({
-    status: 'OK',
-    timestamp: new Date().toISOString(),
-    service: 'ProdX Backend',
-    version: '1.0.0'
-  });
+  res.status(200).json({ status: 'OK' });
 });
 
-// Environment check endpoint
-app.get('/env-check', (req, res) => {
-  res.json({
-    FRONTEND_URL: process.env.FRONTEND_URL,
-    NODE_ENV: process.env.NODE_ENV,
-    CORS_ORIGIN: ['https://inquisitive-cannoli-1a02dc.netlify.app', 'http://localhost:5173']
-  });
+// Handle 404
+app.use((req, res, next) => {
+  res.status(404).json({ message: 'Route not found' });
 });
 
-// API routes
-app.use('/api/auth', authRoutes);
-app.use('/api/inventory', inventoryRoutes);
-app.use('/api/analytics', analyticsRoutes);
-app.use('/api/production', productionRoutes);
-app.use('/api/users', userRoutes);
-app.use('/api/recipes', recipeRoutes);
-
-// Error handling middleware
-app.use((err, req, res, next) => {
-  console.error(err.stack);
-  res.status(500).json({
-    success: false,
-    message: 'Server error',
-    error: process.env.NODE_ENV === 'development' ? err.message : undefined
-  });
-});
-
-// 404 handler
-app.use('*', (req, res) => {
-  res.status(404).json({
-    success: false,
-    message: 'Route not found'
-  });
-});
+// Error handling middleware (should be last)
+app.use(errorHandler);
 
 module.exports = app;

@@ -1,223 +1,170 @@
 const pool = require('../config/database');
-const { formatResponse } = require('../utils/helpers');
 
 class Recipe {
-  static async create(recipeData) {
-    const {
-      name,
-      description,
-      category,
-      prepTime,
-      cookTime,
-      servings,
-      difficulty,
-      instructions,
-      ingredients,
-      additionalCosts,
-      notes,
-      totalCost,
-      totalIngredientCost,
-      costPerServing,
-      created_by
-    } = recipeData;
-    
+  static async getAll() {
     try {
-      const result = await pool.query(
-        `INSERT INTO recipes 
-        (name, description, category, prep_time, cook_time, servings, difficulty, 
-        instructions, ingredients, additional_costs, notes, total_cost, 
-        total_ingredient_cost, cost_per_serving, created_by) 
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-        [
-          name, description, category, prepTime, cookTime, servings, difficulty,
-          JSON.stringify(instructions), JSON.stringify(ingredients), 
-          JSON.stringify(additionalCosts || []), notes, totalCost, 
-          totalIngredientCost, costPerServing, created_by
-        ]
-      );
-      
-      const newRecipe = await this.findById(result.insertId);
-      
-      return formatResponse(true, 'Recipe created successfully', newRecipe);
+      const [rows] = await pool.execute('SELECT * FROM recipes ORDER BY name');
+      return rows;
     } catch (error) {
       throw error;
     }
   }
-  
+
   static async findById(id) {
     try {
-      const rows = await pool.query(
-        `SELECT id, name, description, category, prep_time, cook_time, servings, 
-        difficulty, instructions, ingredients, additional_costs, notes, 
-        total_cost, total_ingredient_cost, cost_per_serving, created_by, 
-        updated_by, created_at, updated_at 
-        FROM recipes WHERE id = ?`, 
+      const [recipeRows] = await pool.execute(
+        'SELECT * FROM recipes WHERE id = ?',
         [id]
       );
       
-      if (rows.length === 0) return null;
+      if (recipeRows.length === 0) return null;
       
-      const recipe = rows[0];
-      recipe.instructions = JSON.parse(recipe.instructions);
-      recipe.ingredients = JSON.parse(recipe.ingredients);
-      recipe.additional_costs = JSON.parse(recipe.additional_costs);
-      
-      return recipe;
-    } catch (error) {
-      throw error;
-    }
-  }
-  
-  static async findAll(filters = {}) {
-    try {
-      let query = `SELECT id, name, description, category, prep_time, cook_time, servings, 
-                  difficulty, instructions, ingredients, additional_costs, notes, 
-                  total_cost, total_ingredient_cost, cost_per_serving, created_by, 
-                  updated_by, created_at, updated_at 
-                  FROM recipes WHERE 1=1`;
-      const params = [];
-      
-      if (filters.category) {
-        query += ' AND category = ?';
-        params.push(filters.category);
-      }
-      
-      if (filters.search) {
-        query += ' AND (name LIKE ? OR category LIKE ?)';
-        params.push(`%${filters.search}%`, `%${filters.search}%`);
-      }
-      
-      query += ' ORDER BY created_at DESC';
-      
-      const rows = await pool.query(query, params);
-      
-      return rows.map(recipe => ({
-        ...recipe,
-        instructions: JSON.parse(recipe.instructions),
-        ingredients: JSON.parse(recipe.ingredients),
-        additional_costs: JSON.parse(recipe.additional_costs)
-      }));
-    } catch (error) {
-      throw error;
-    }
-  }
-  
-  static async findAndCountAll(options = {}) {
-    try {
-      const { page = 0, size = 10, category, search } = options;
-      const offset = page * size;
-      
-      // Get total count
-      let countQuery = 'SELECT COUNT(*) as total FROM recipes WHERE 1=1';
-      const countParams = [];
-      
-      if (category) {
-        countQuery += ' AND category = ?';
-        countParams.push(category);
-      }
-      
-      if (search) {
-        countQuery += ' AND (name LIKE ? OR category LIKE ?)';
-        countParams.push(`%${search}%`, `%${search}%`);
-      }
-      
-      const countResult = await pool.query(countQuery, countParams);
-      const totalItems = countResult[0].total;
-      
-      // Get paginated data
-      let query = `SELECT id, name, description, category, prep_time, cook_time, servings, 
-                  difficulty, instructions, ingredients, additional_costs, notes, 
-                  total_cost, total_ingredient_cost, cost_per_serving, created_by, 
-                  updated_by, created_at, updated_at 
-                  FROM recipes WHERE 1=1`;
-      const params = [...countParams];
-      
-      if (category) {
-        query += ' AND category = ?';
-        params.push(category);
-      }
-      
-      if (search) {
-        query += ' AND (name LIKE ? OR category LIKE ?)';
-        params.push(`%${search}%`, `%${search}%`);
-      }
-      
-      query += ' ORDER BY created_at DESC LIMIT ? OFFSET ?';
-      params.push(size, offset);
-      
-      const rows = await pool.query(query, params);
-      
-      const recipes = rows.map(recipe => ({
-        ...recipe,
-        instructions: JSON.parse(recipe.instructions),
-        ingredients: JSON.parse(recipe.ingredients),
-        additional_costs: JSON.parse(recipe.additional_costs)
-      }));
+      const [ingredientRows] = await pool.execute(
+        'SELECT ri.*, m.name as materialName, m.unit FROM recipe_ingredients ri JOIN materials m ON ri.materialId = m.id WHERE ri.recipeId = ?',
+        [id]
+      );
       
       return {
-        count: totalItems,
-        rows: recipes
+        ...recipeRows[0],
+        ingredients: ingredientRows
       };
     } catch (error) {
       throw error;
     }
   }
-  
-  static async update(id, recipeData) {
-    const {
-      name,
-      description,
-      category,
-      prepTime,
-      cookTime,
-      servings,
-      difficulty,
-      instructions,
-      ingredients,
-      additionalCosts,
-      notes,
-      totalCost,
-      totalIngredientCost,
-      costPerServing,
-      updated_by
-    } = recipeData;
+
+  static async create(recipeData) {
+    const { name, category, ingredients } = recipeData;
+    const connection = await pool.getConnection();
     
     try {
-      await pool.query(
-        `UPDATE recipes SET 
-        name = ?, description = ?, category = ?, prep_time = ?, cook_time = ?, 
-        servings = ?, difficulty = ?, instructions = ?, ingredients = ?, 
-        additional_costs = ?, notes = ?, total_cost = ?, total_ingredient_cost = ?, 
-        cost_per_serving = ?, updated_by = ?, updated_at = NOW() 
-        WHERE id = ?`,
-        [
-          name, description, category, prepTime, cookTime, servings, difficulty,
-          JSON.stringify(instructions), JSON.stringify(ingredients), 
-          JSON.stringify(additionalCosts || []), notes, totalCost, 
-          totalIngredientCost, costPerServing, updated_by, id
-        ]
+      await connection.beginTransaction();
+      
+      const [recipeResult] = await connection.execute(
+        'INSERT INTO recipes (name, category) VALUES (?, ?)',
+        [name, category]
       );
       
-      const updatedRecipe = await this.findById(id);
-      return formatResponse(true, 'Recipe updated successfully', updatedRecipe);
-    } catch (error) {
-      throw error;
-    }
-  }
-  
-  static async destroy(id) {
-    try {
-      const result = await pool.query('DELETE FROM recipes WHERE id = ?', [id]);
+      const recipeId = recipeResult.insertId;
       
-      if (result.affectedRows === 0) {
-        return formatResponse(false, 'Recipe not found');
+      for (const ingredient of ingredients) {
+        await connection.execute(
+          'INSERT INTO recipe_ingredients (recipeId, materialId, quantity) VALUES (?, ?, ?)',
+          [recipeId, ingredient.materialId, ingredient.quantity]
+        );
       }
       
-      return formatResponse(true, 'Recipe deleted successfully');
+      await connection.commit();
+      return { id: recipeId, name, category };
+    } catch (error) {
+      await connection.rollback();
+      throw error;
+    } finally {
+      connection.release();
+    }
+  }
+
+  static async update(id, recipeData) {
+    const { name, category, ingredients } = recipeData;
+    const connection = await pool.getConnection();
+    
+    try {
+      await connection.beginTransaction();
+      
+      await connection.execute(
+        'UPDATE recipes SET name = ?, category = ? WHERE id = ?',
+        [name, category, id]
+      );
+      
+      await connection.execute(
+        'DELETE FROM recipe_ingredients WHERE recipeId = ?',
+        [id]
+      );
+      
+      for (const ingredient of ingredients) {
+        await connection.execute(
+          'INSERT INTO recipe_ingredients (recipeId, materialId, quantity) VALUES (?, ?, ?)',
+          [id, ingredient.materialId, ingredient.quantity]
+        );
+      }
+      
+      await connection.commit();
+      return { id, name, category };
+    } catch (error) {
+      await connection.rollback();
+      throw error;
+    } finally {
+      connection.release();
+    }
+  }
+
+  static async delete(id) {
+    const connection = await pool.getConnection();
+    
+    try {
+      await connection.beginTransaction();
+      
+      await connection.execute(
+        'DELETE FROM recipe_ingredients WHERE recipeId = ?',
+        [id]
+      );
+      
+      await connection.execute(
+        'DELETE FROM recipes WHERE id = ?',
+        [id]
+      );
+      
+      await connection.commit();
+      return { id };
+    } catch (error) {
+      await connection.rollback();
+      throw error;
+    } finally {
+      connection.release();
+    }
+  }
+
+  static async calculateMaterials(id, quantity) {
+    try {
+      const recipe = await this.findById(id);
+      if (!recipe) throw new Error('Recipe not found');
+      
+      const [ingredientRows] = await pool.execute(
+        `SELECT ri.*, m.name, m.unit, m.unitPrice 
+         FROM recipe_ingredients ri 
+         JOIN materials m ON ri.materialId = m.id 
+         WHERE ri.recipeId = ?`,
+        [id]
+      );
+      
+      let totalCost = 0;
+      const materialsRequired = [];
+      
+      for (const ingredient of ingredientRows) {
+        const requiredQuantity = ingredient.quantity * quantity;
+        const materialCost = requiredQuantity * ingredient.unitPrice;
+        totalCost += materialCost;
+        
+        materialsRequired.push({
+          id: ingredient.materialId,
+          name: ingredient.name,
+          quantity: requiredQuantity,
+          unit: ingredient.unit,
+          unitPrice: ingredient.unitPrice,
+          totalCost: materialCost
+        });
+      }
+      
+      return {
+        recipeName: recipe.name,
+        quantityToProduce: quantity,
+        materialsRequired,
+        estimatedCost: totalCost
+      };
     } catch (error) {
       throw error;
     }
   }
 }
 
-module.exports = { Recipe };
+module.exports = Recipe;
