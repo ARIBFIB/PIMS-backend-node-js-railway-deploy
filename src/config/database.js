@@ -17,9 +17,13 @@ if (process.env.MYSQL_URL) {
       waitForConnections: true,
       connectionLimit: 10,
       queueLimit: 0,
-      connectTimeout: 10000,
+      connectTimeout: 20000, // 20 seconds
+      acquireTimeout: 20000, // 20 seconds
+      timeout: 20000, // 20 seconds
       enableKeepAlive: true,
       keepAliveInitialDelay: 0,
+      reconnect: true,
+      ssl: false, // Try without SSL first
     };
   } catch (error) {
     console.error('Error parsing MYSQL_URL:', error.message);
@@ -36,9 +40,13 @@ else if (process.env.DB_HOST) {
     waitForConnections: true,
     connectionLimit: 10,
     queueLimit: 0,
-    connectTimeout: 10000,
+    connectTimeout: 20000, // 20 seconds
+    acquireTimeout: 20000, // 20 seconds
+    timeout: 20000, // 20 seconds
     enableKeepAlive: true,
     keepAliveInitialDelay: 0,
+    reconnect: true,
+    ssl: false, // Try without SSL first
   };
 }
 // Fallback to Railway's standard environment variables (lowest priority)
@@ -52,9 +60,13 @@ else {
     waitForConnections: true,
     connectionLimit: 10,
     queueLimit: 0,
-    connectTimeout: 10000,
+    connectTimeout: 20000, // 20 seconds
+    acquireTimeout: 20000, // 20 seconds
+    timeout: 20000, // 20 seconds
     enableKeepAlive: true,
     keepAliveInitialDelay: 0,
+    reconnect: true,
+    ssl: false, // Try without SSL first
   };
 }
 
@@ -107,6 +119,7 @@ const initializeDatabase = async (retryCount = 0) => {
       console.error('1. Check your database credentials');
       console.error('2. Verify database user permissions');
       console.error('3. Ensure the database is accessible from your application');
+      console.error('4. Check if SSL is required for the connection');
       process.exit(1);
     }
   }
