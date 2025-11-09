@@ -4,7 +4,7 @@ require('dotenv').config();
 // Parse database configuration
 let dbConfig = {};
 
-// If MYSQL_URL is provided, use it
+// If MYSQL_URL is provided, use it (highest priority)
 if (process.env.MYSQL_URL) {
   try {
     const url = new URL(process.env.MYSQL_URL);
@@ -25,7 +25,7 @@ if (process.env.MYSQL_URL) {
     console.error('Error parsing MYSQL_URL:', error.message);
   }
 } 
-// Otherwise, use individual environment variables
+// Use DB_* environment variables (medium priority)
 else if (process.env.DB_HOST) {
   dbConfig = {
     host: process.env.DB_HOST,
@@ -41,13 +41,13 @@ else if (process.env.DB_HOST) {
     keepAliveInitialDelay: 0,
   };
 }
-// Fallback to Railway's standard environment variables
+// Fallback to Railway's standard environment variables (lowest priority)
 else {
   dbConfig = {
     host: process.env.MYSQLHOST || 'mysql-odu5.railway.internal',
     port: parseInt(process.env.MYSQLPORT) || 3306,
     user: process.env.MYSQLUSER || 'root',
-    password: process.env.MYSQLPASSWORD || 'NSsYtayIZiLehwcekexDHEEcowKqAJzY',
+    password: process.env.MYSQLPASSWORD || '',
     database: process.env.MYSQLDATABASE || 'railway',
     waitForConnections: true,
     connectionLimit: 10,
