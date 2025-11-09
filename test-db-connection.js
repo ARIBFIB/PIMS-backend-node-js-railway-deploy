@@ -1,4 +1,5 @@
 const mysql = require('mysql2/promise');
+require('dotenv').config();
 
 // Use Railway environment variables or fallback to .env values
 const dbConfig = {
