@@ -1,7 +1,7 @@
 const mysql = require('mysql2/promise');
 require('dotenv').config();
 
-// Parse database configuration
+// Parse database configuration with VALID MySQL2 options only
 let dbConfig = {};
 
 // If MYSQL_URL is provided, use it (highest priority)
@@ -17,13 +17,10 @@ if (process.env.MYSQL_URL) {
       waitForConnections: true,
       connectionLimit: 10,
       queueLimit: 0,
-      connectTimeout: 20000, // 20 seconds
-      acquireTimeout: 20000, // 20 seconds
-      timeout: 20000, // 20 seconds
+      connectTimeout: 20000, // 20 seconds (valid option)
       enableKeepAlive: true,
       keepAliveInitialDelay: 0,
-      reconnect: true,
-      ssl: false, // Try without SSL first
+      ssl: { rejectUnauthorized: false } // Try with SSL
     };
   } catch (error) {
     console.error('Error parsing MYSQL_URL:', error.message);
@@ -40,13 +37,10 @@ else if (process.env.DB_HOST) {
     waitForConnections: true,
     connectionLimit: 10,
     queueLimit: 0,
-    connectTimeout: 20000, // 20 seconds
-    acquireTimeout: 20000, // 20 seconds
-    timeout: 20000, // 20 seconds
+    connectTimeout: 20000, // 20 seconds (valid option)
     enableKeepAlive: true,
     keepAliveInitialDelay: 0,
-    reconnect: true,
-    ssl: false, // Try without SSL first
+    ssl: { rejectUnauthorized: false } // Try with SSL
   };
 }
 // Fallback to Railway's standard environment variables (lowest priority)
@@ -60,13 +54,10 @@ else {
     waitForConnections: true,
     connectionLimit: 10,
     queueLimit: 0,
-    connectTimeout: 20000, // 20 seconds
-    acquireTimeout: 20000, // 20 seconds
-    timeout: 20000, // 20 seconds
+    connectTimeout: 20000, // 20 seconds (valid option)
     enableKeepAlive: true,
     keepAliveInitialDelay: 0,
-    reconnect: true,
-    ssl: false, // Try without SSL first
+    ssl: { rejectUnauthorized: false } // Try with SSL
   };
 }
 
@@ -119,7 +110,8 @@ const initializeDatabase = async (retryCount = 0) => {
       console.error('1. Check your database credentials');
       console.error('2. Verify database user permissions');
       console.error('3. Ensure the database is accessible from your application');
-      console.error('4. Check if SSL is required for the connection');
+      console.error('4. Check if the database tables exist');
+      console.error('5. Try using the public network connection instead of internal');
       process.exit(1);
     }
   }
