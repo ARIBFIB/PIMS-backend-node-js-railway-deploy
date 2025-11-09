@@ -1,0 +1,38 @@
+const mysql = require('mysql2/promise');
+
+// Use Railway environment variables or fallback to .env values
+const dbConfig = {
+  host: process.env.MYSQLHOST || process.env.DB_HOST || 'localhost',
+  port: process.env.MYSQLPORT || process.env.DB_PORT || 3306,
+  user: process.env.MYSQLUSER || process.env.DB_USER || 'root',
+  password: process.env.MYSQLPASSWORD || process.env.DB_PASSWORD || '',
+  database: process.env.MYSQLDATABASE || process.env.DB_NAME || 'pims',
+};
+
+async function testConnection() {
+  try {
+    console.log('Testing database connection with config:', {
+      host: dbConfig.host,
+      port: dbConfig.port,
+      user: dbConfig.user,
+      database: dbConfig.database
+    });
+    
+    const connection = await mysql.createConnection(dbConfig);
+    await connection.ping();
+    console.log('✅ Database connection successful!');
+    
+    // Test a simple query
+    const [rows] = await connection.execute('SELECT 1 as test');
+    console.log('✅ Simple query test successful:', rows);
+    
+    await connection.end();
+    console.log('✅ Database connection test completed successfully!');
+  } catch (error) {
+    console.error('❌ Database connection failed:', error.message);
+    console.error('Error code:', error.code);
+    console.error('Error errno:', error.errno);
+  }
+}
+
+testConnection();
