@@ -39,8 +39,13 @@ const corsOptions = {
 // Apply CORS middleware
 app.use(cors(corsOptions));
 
-// Add a specific CORS handler for preflight requests (fixed)
-app.options('*', cors(corsOptions));
+// Handle preflight requests properly
+app.options('*', (req, res) => {
+  res.header('Access-Control-Allow-Origin', req.header('origin'));
+  res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
+  res.header('Access-Control-Allow-Headers', 'Content-Type, Authorization');
+  res.sendStatus(200);
+});
 
 // Rate limiting
 const limiter = rateLimit({

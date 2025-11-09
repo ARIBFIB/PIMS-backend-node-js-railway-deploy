@@ -1,21 +1,62 @@
 const mysql = require('mysql2/promise');
 require('dotenv').config();
 
-// Database connection configuration using Railway's standard environment variables
-// Railway automatically provides these variables when you provision a MySQL database
-const dbConfig = {
-  host: process.env.MYSQLHOST || process.env.DB_HOST || 'mysql-odu5.railway.internal',
-  port: process.env.MYSQLPORT || process.env.DB_PORT || 3306,
-  user: process.env.MYSQLUSER || process.env.DB_USER || 'root',
-  password: process.env.MYSQLPASSWORD || process.env.DB_PASSWORD || 'NSsYtayIZiLehwcekexDHEEcowKqAJzY',
-  database: process.env.MYSQLDATABASE || process.env.DB_NAME || 'railway',
-  waitForConnections: true,
-  connectionLimit: 10,
-  queueLimit: 0,
-  connectTimeout: 10000, // 10 seconds
-  enableKeepAlive: true,
-  keepAliveInitialDelay: 0,
-};
+// Parse database configuration
+let dbConfig = {};
+
+// If MYSQL_URL is provided, use it
+if (process.env.MYSQL_URL) {
+  try {
+    const url = new URL(process.env.MYSQL_URL);
+    dbConfig = {
+      host: url.hostname,
+      port: parseInt(url.port) || 3306,
+      user: url.username,
+      password: url.password,
+      database: url.pathname.substring(1),
+      waitForConnections: true,
+      connectionLimit: 10,
+      queueLimit: 0,
+      connectTimeout: 10000,
+      enableKeepAlive: true,
+      keepAliveInitialDelay: 0,
+    };
+  } catch (error) {
+    console.error('Error parsing MYSQL_URL:', error.message);
+  }
+} 
+// Otherwise, use individual environment variables
+else if (process.env.DB_HOST) {
+  dbConfig = {
+    host: process.env.DB_HOST,
+    port: parseInt(process.env.DB_PORT) || 3306,
+    user: process.env.DB_USER || 'root',
+    password: process.env.DB_PASSWORD || '',
+    database: process.env.DB_NAME || 'railway',
+    waitForConnections: true,
+    connectionLimit: 10,
+    queueLimit: 0,
+    connectTimeout: 10000,
+    enableKeepAlive: true,
+    keepAliveInitialDelay: 0,
+  };
+}
+// Fallback to Railway's standard environment variables
+else {
+  dbConfig = {
+    host: process.env.MYSQLHOST || 'mysql-odu5.railway.internal',
+    port: parseInt(process.env.MYSQLPORT) || 3306,
+    user: process.env.MYSQLUSER || 'root',
+    password: process.env.MYSQLPASSWORD || 'NSsYtayIZiLehwcekexDHEEcowKqAJzY',
+    database: process.env.MYSQLDATABASE || 'railway',
+    waitForConnections: true,
+    connectionLimit: 10,
+    queueLimit: 0,
+    connectTimeout: 10000,
+    enableKeepAlive: true,
+    keepAliveInitialDelay: 0,
+  };
+}
 
 console.log('Database configuration:', {
   host: dbConfig.host,
@@ -63,9 +104,9 @@ const initializeDatabase = async (retryCount = 0) => {
     } else {
       console.error('❌ Database connection failed after maximum retries.');
       console.error('💡 Troubleshooting tips:');
-      console.error('1. Check Railway environment variables (MYSQLHOST, MYSQLUSER, MYSQLPASSWORD, MYSQLDATABASE)');
-      console.error('2. Verify database user permissions - root user may need additional privileges');
-      console.error('3. Consider creating a dedicated database user with broader permissions');
+      console.error('1. Check your database credentials');
+      console.error('2. Verify database user permissions');
+      console.error('3. Ensure the database is accessible from your application');
       process.exit(1);
     }
   }
