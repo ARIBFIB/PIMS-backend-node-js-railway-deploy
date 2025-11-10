@@ -1,6 +1,5 @@
 // Script to initialize database tables
 const mysql = require('mysql2/promise');
-require('dotenv').config();
 
 // Database connection configuration with Railway-compatible settings
 const dbConfig = {
