@@ -7,28 +7,28 @@ async function setupDatabase() {
   try {
     // First connect without specifying database to create it
     connection = await mysql.createConnection({
-      host: process.env.MYSQLHOST || process.env.DB_HOST || 'localhost',
-      port: process.env.MYSQLPORT || process.env.DB_PORT || 3306,
-      user: process.env.MYSQLUSER || process.env.DB_USER || 'root',
-      password: process.env.MYSQLPASSWORD || process.env.DB_PASSWORD || '',
+      host: process.env.DB_HOST || 'localhost',
+      port: process.env.DB_PORT || 3306,
+      user: process.env.DB_USER || 'root',
+      password: process.env.DB_PASSWORD || '',
     });
     
     console.log('Connected to MySQL server');
     
     // Create database if it doesn't exist
-    await connection.execute(`CREATE DATABASE IF NOT EXISTS ${process.env.MYSQLDATABASE || process.env.DB_NAME || 'pims'}`);
-    console.log(`Database ${process.env.MYSQLDATABASE || process.env.DB_NAME || 'pims'} created or already exists`);
+    await connection.execute(`CREATE DATABASE IF NOT EXISTS ${process.env.DB_NAME || 'pims'}`);
+    console.log(`Database ${process.env.DB_NAME || 'pims'} created or already exists`);
     
     // Close the connection
     await connection.end();
     
     // Now connect to the specific database
     connection = await mysql.createConnection({
-      host: process.env.MYSQLHOST || process.env.DB_HOST || 'localhost',
-      port: process.env.MYSQLPORT || process.env.DB_PORT || 3306,
-      user: process.env.MYSQLUSER || process.env.DB_USER || 'root',
-      password: process.env.MYSQLPASSWORD || process.env.DB_PASSWORD || '',
-      database: process.env.MYSQLDATABASE || process.env.DB_NAME || 'pims',
+      host: process.env.DB_HOST || 'localhost',
+      port: process.env.DB_PORT || 3306,
+      user: process.env.DB_USER || 'root',
+      password: process.env.DB_PASSWORD || '',
+      database: process.env.DB_NAME || 'pims',
     });
     
     console.log('Connected to database');

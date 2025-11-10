@@ -2,12 +2,11 @@
   "name": "pims-backend",
   "version": "1.0.0",
   "description": "Production Inventory Management System - Backend API with comprehensive testing suite",
-  "main": "server.js",
+  "main": "index.js",
   "scripts": {
     "start": "node server.js",
-    "dev": "node server.js",
+    "dev": "nodemon server.js",
     "setup-db": "node setup-database.js",
-    "init-db": "node init-db.js",
     "test": "node tests/api.test.js"
   },
   "keywords": [],
@@ -26,5 +25,9 @@
     "morgan": "^1.10.1",
     "multer": "^2.0.2",
     "mysql2": "^3.15.3"
+  },
+  "devDependencies": {
+    "concurrently": "^9.2.1",
+    "nodemon": "^3.1.10"
   }
 }
