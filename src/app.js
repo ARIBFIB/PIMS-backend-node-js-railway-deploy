@@ -16,12 +16,13 @@ const errorHandler = require('./middleware/errorHandler');
 
 const app = express();
 
-// Trust proxy for rate limiting (fixes the X-Forwarded-For warning)
+// Trust proxy for rate limiting
 app.set('trust proxy', 1);
 
 // Configure CORS with specific options
 const corsOptions = {
   origin: [
+    'https://funny-melba-61fb3d.netlify.app', // Your new Netlify frontend
     'https://inquisitive-cannoli-1a02dc.netlify.app',
     'https://69103f69dcfd481c4c5af487--inquisitive-cannoli-1a02dc.netlify.app',
     'http://localhost:3000',

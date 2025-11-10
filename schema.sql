@@ -1,8 +1,8 @@
 -- Create database
-CREATE DATABASE IF NOT EXISTS pims;
+CREATE DATABASE IF NOT EXISTS admin_pims;
 
 -- Use the database
-USE pims;
+USE admin_pims;
 
 -- Users table
 CREATE TABLE IF NOT EXISTS users (

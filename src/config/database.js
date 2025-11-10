@@ -4,29 +4,23 @@ require('dotenv').config();
 // Parse database configuration with VALID MySQL2 options only
 let dbConfig = {};
 
-// If MYSQL_URL is provided, use it (highest priority)
-if (process.env.MYSQL_URL) {
-  try {
-    const url = new URL(process.env.MYSQL_URL);
-    dbConfig = {
-      host: url.hostname,
-      port: parseInt(url.port) || 3306,
-      user: url.username,
-      password: url.password,
-      database: url.pathname.substring(1),
-      waitForConnections: true,
-      connectionLimit: 10,
-      queueLimit: 0,
-      connectTimeout: 20000, // 20 seconds (valid option)
-      enableKeepAlive: true,
-      keepAliveInitialDelay: 0,
-      ssl: { rejectUnauthorized: false } // Try with SSL
-    };
-  } catch (error) {
-    console.error('Error parsing MYSQL_URL:', error.message);
-  }
-} 
-// Use DB_* environment variables (medium priority)
+// Use Railway's environment variables (highest priority)
+if (process.env.MYSQLHOST) {
+  dbConfig = {
+    host: process.env.MYSQLHOST || 'mysql-odu5.railway.internal',
+    port: parseInt(process.env.MYSQLPORT) || 3306,
+    user: process.env.MYSQLUSER || 'root',
+    password: process.env.MYSQLPASSWORD || '',
+    database: process.env.MYSQLDATABASE || 'railway',
+    waitForConnections: true,
+    connectionLimit: 10,
+    queueLimit: 0,
+    connectTimeout: 20000, // 20 seconds (valid option)
+    enableKeepAlive: true,
+    keepAliveInitialDelay: 0,
+  };
+}
+// Fallback to DB_* environment variables
 else if (process.env.DB_HOST) {
   dbConfig = {
     host: process.env.DB_HOST,
@@ -40,24 +34,22 @@ else if (process.env.DB_HOST) {
     connectTimeout: 20000, // 20 seconds (valid option)
     enableKeepAlive: true,
     keepAliveInitialDelay: 0,
-    ssl: { rejectUnauthorized: false } // Try with SSL
   };
 }
-// Fallback to Railway's standard environment variables (lowest priority)
+// Local development fallback
 else {
   dbConfig = {
-    host: process.env.MYSQLHOST || 'mysql-odu5.railway.internal',
-    port: parseInt(process.env.MYSQLPORT) || 3306,
-    user: process.env.MYSQLUSER || 'root',
-    password: process.env.MYSQLPASSWORD || '',
-    database: process.env.MYSQLDATABASE || 'railway',
+    host: 'localhost',
+    port: 3306,
+    user: 'root',
+    password: '',
+    database: 'pims',
     waitForConnections: true,
     connectionLimit: 10,
     queueLimit: 0,
     connectTimeout: 20000, // 20 seconds (valid option)
     enableKeepAlive: true,
     keepAliveInitialDelay: 0,
-    ssl: { rejectUnauthorized: false } // Try with SSL
   };
 }
 
@@ -111,7 +103,6 @@ const initializeDatabase = async (retryCount = 0) => {
       console.error('2. Verify database user permissions');
       console.error('3. Ensure the database is accessible from your application');
       console.error('4. Check if the database tables exist');
-      console.error('5. Try using the public network connection instead of internal');
       process.exit(1);
     }
   }
