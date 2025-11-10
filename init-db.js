@@ -2,14 +2,21 @@
 const mysql = require('mysql2/promise');
 require('dotenv').config();
 
-// Database configuration
+// Database configuration - Use Railway's environment variables or fallback
 const dbConfig = {
-  host: process.env.MYSQLHOST || 'mysql.railway.internal',
-  port: parseInt(process.env.MYSQLPORT) || 3306,
-  user: process.env.MYSQLUSER || 'root',
-  password: process.env.MYSQLPASSWORD || '',
-  database: process.env.MYSQLDATABASE || 'railway',
+  host: process.env.MYSQLHOST || process.env.DB_HOST || 'mysql.railway.internal',
+  port: parseInt(process.env.MYSQLPORT || process.env.DB_PORT) || 3306,
+  user: process.env.MYSQLUSER || process.env.DB_USER || 'root',
+  password: process.env.MYSQLPASSWORD || process.env.DB_PASSWORD || '',
+  database: process.env.MYSQLDATABASE || process.env.DB_NAME || 'railway',
 };
+
+console.log('Database configuration for initialization:', {
+  host: dbConfig.host,
+  port: dbConfig.port,
+  user: dbConfig.user,
+  database: dbConfig.database,
+});
 
 async function initDatabase() {
   let connection;
@@ -112,6 +119,8 @@ async function initDatabase() {
     
   } catch (error) {
     console.error('❌ Database initialization failed:', error.message);
+    console.error('Error code:', error.code);
+    console.error('Error errno:', error.errno);
     if (connection) await connection.end();
     process.exit(1);
   }
