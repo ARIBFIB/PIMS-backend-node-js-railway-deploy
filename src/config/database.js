@@ -2,21 +2,73 @@
 const mysql = require('mysql2/promise');
 require('dotenv').config();
 
-// Database configuration - Use Railway's environment variables or fallback
+// Database connection configuration with Railway-compatible settings
 const dbConfig = {
-  host: process.env.MYSQLHOST || process.env.DB_HOST || 'mysql.railway.internal',
-  port: parseInt(process.env.MYSQLPORT || process.env.DB_PORT) || 3306,
+  host: process.env.MYSQLHOST || process.env.DB_HOST || 'localhost',
+  port: process.env.MYSQLPORT || process.env.DB_PORT || 3306,
   user: process.env.MYSQLUSER || process.env.DB_USER || 'root',
   password: process.env.MYSQLPASSWORD || process.env.DB_PASSWORD || '',
-  database: process.env.MYSQLDATABASE || process.env.DB_NAME || 'railway',
+  database: process.env.MYSQLDATABASE || process.env.DB_NAME || 'pims',
+  waitForConnections: true,
+  connectionLimit: 10,
+  queueLimit: 0,
+  connectTimeout: 20000, // 20 seconds
+  enableKeepAlive: true,
+  keepAliveInitialDelay: 0,
 };
 
-console.log('Database configuration for initialization:', {
+console.log('Database configuration:', {
   host: dbConfig.host,
   port: dbConfig.port,
   user: dbConfig.user,
   database: dbConfig.database,
 });
+
+// Create connection pool
+const pool = mysql.createPool(dbConfig);
+
+// Test database connection
+const testConnection = async () => {
+  try {
+    console.log('Attempting to connect to database...');
+    const connection = await pool.getConnection();
+    await connection.ping();
+    connection.release();
+    console.log('✅ Database connection successful');
+    return true;
+  } catch (error) {
+    console.error('❌ Database connection failed:', error.message);
+    console.error('Error code:', error.code);
+    console.error('Error errno:', error.errno);
+    if (error.sqlState) {
+      console.error('SQL State:', error.sqlState);
+    }
+    return false;
+  }
+};
+
+// Initialize database connection
+const initializeDatabase = async () => {
+  const isConnected = await testConnection();
+  if (!isConnected) {
+    console.log('⚠️  Retrying database connection in 5 seconds...');
+    setTimeout(initializeDatabase, 5000);
+  }
+};
+
+// Initialize on startup
+initializeDatabase();
+
+// Handle pool errors
+pool.on('error', (err) => {
+  console.error('Database pool error:', err);
+  if (err.code === 'PROTOCOL_CONNECTION_LOST') {
+    console.log('Attempting to reconnect to database...');
+    initializeDatabase();
+  }
+});
+
+module.exports = pool;
 
 async function initDatabase() {
   let connection;
