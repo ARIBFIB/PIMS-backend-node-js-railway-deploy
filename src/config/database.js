@@ -7,7 +7,7 @@ let dbConfig = {};
 // Use Railway's environment variables (highest priority)
 if (process.env.MYSQLHOST) {
   dbConfig = {
-    host: process.env.MYSQLHOST || 'mysql-odu5.railway.internal',
+    host: process.env.MYSQLHOST || 'mysql.railway.internal',
     port: parseInt(process.env.MYSQLPORT) || 3306,
     user: process.env.MYSQLUSER || 'root',
     password: process.env.MYSQLPASSWORD || '',
