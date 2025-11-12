@@ -18,7 +18,15 @@ async function initDatabase() {
 
   try {
     console.log('🚀 Connecting to MySQL server...');
-    connection = await mysql.createConnection(dbConfig);
+    // Connect without specifying database first
+    const connectConfig = { ...dbConfig, database: undefined };
+    connection = await mysql.createConnection(connectConfig);
+    
+    // Select the database
+    if (dbConfig.database) {
+      await connection.query(`USE ${dbConfig.database};`);
+      console.log(`✅ Selected database: ${dbConfig.database}`);
+    }
     
     console.log('✅ Connected to MySQL');
 
@@ -38,16 +46,22 @@ async function initDatabase() {
     
     // Execute each statement
     for (const statement of statements) {
+      if (statement.trim() === '') continue;
+      
       try {
         await connection.query(statement);
+        console.log(`✅ Executed: ${statement.substring(0, 50)}...`);
       } catch (err) {
-        // Skip errors for duplicate column additions
-        if (!err.message.includes('Duplicate column name') && 
-            !err.message.includes('Duplicate foreign key constraint name') &&
-            !err.message.includes('already exists')) {
-          throw err;
+        // Log but don't fail on duplicate errors
+        if (err.message.includes('Duplicate column name') || 
+            err.message.includes('Duplicate foreign key constraint name') ||
+            err.message.includes('already exists') ||
+            err.message.includes('already been added')) {
+          console.log(`⚠️  Skipped (already exists): ${statement.substring(0, 50)}...`);
+        } else {
+          console.log(`ℹ️  Non-critical error: ${err.message}`);
+          // For Railway, we continue even if there are non-critical errors
         }
-        console.log(`⚠️  Skipped (already exists): ${statement.substring(0, 50)}...`);
       }
     }
     

@@ -31,6 +31,8 @@ async function initDatabase() {
       await connection.query(`USE admin_pims;`);
       console.log("✅ Database 'admin_pims' created/selected");
     } else {
+      // For Railway, we need to select the database explicitly
+      await connection.query(`USE ${process.env.MYSQLDATABASE};`);
       console.log("✅ Using Railway provided database");
     }
 

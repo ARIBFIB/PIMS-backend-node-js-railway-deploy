@@ -1,4 +1,6 @@
 -- Railway database schema for prodX
+-- Select the database
+USE railway;
 
 -- Users table
 CREATE TABLE IF NOT EXISTS users (
