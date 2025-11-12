@@ -86,10 +86,6 @@ app.use('/api/recipes', recipeRoutes);
 app.use('/api/production-logs', productionRoutes);
 app.use('/api/reports', reportRoutes);
 
-
-
-app.use('/api/reports', reportRoutes);
-
 app.use('/api/uom', uomRoutes);
 app.use('/api/categories', categoryRoutes);
 app.use('/api/suppliers', supplierRoutes);
