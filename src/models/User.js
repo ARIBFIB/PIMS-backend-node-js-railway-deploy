@@ -1,4 +1,4 @@
-const pool = require('../config/database');
+const pool = require('../config/dbPool');
 // Removed bcrypt import since we're removing password hashing
 
 class User {
