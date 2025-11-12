@@ -20,7 +20,7 @@ const getProductionLogs = async (req, res) => {
 
 const logProduction = async (req, res) => {
   try {
-    const { recipeId, quantityProduced, additionalExpense } = req.body;
+    const { recipeId, customerId, quantityProduced, additionalExpense } = req.body;
     
     // Validate input
     if (!recipeId || !quantityProduced || isNaN(quantityProduced) || parseFloat(quantityProduced) <= 0) {
@@ -29,6 +29,7 @@ const logProduction = async (req, res) => {
     
     const log = await ProductionLog.create({
       recipeId,
+      customerId,
       quantityProduced: parseFloat(quantityProduced),
       additionalExpense: additionalExpense ? parseFloat(additionalExpense) : 0
     });
@@ -40,7 +41,21 @@ const logProduction = async (req, res) => {
   }
 };
 
+const approveProduction = async (req, res) => {
+  try {
+    const { id } = req.params;
+    
+    const result = await ProductionLog.approve(id);
+    
+    res.json({ message: 'Production approved successfully', result });
+  } catch (error) {
+    console.error('Approve production error:', error);
+    res.status(500).json({ message: error.message || 'Internal server error' });
+  }
+};
+
 module.exports = {
   getProductionLogs,
-  logProduction
+  logProduction,
+  approveProduction
 };

@@ -3,7 +3,12 @@ const pool = require('../config/database');
 class Recipe {
   static async getAll() {
     try {
-      const [rows] = await pool.execute('SELECT * FROM recipes ORDER BY name');
+      const [rows] = await pool.execute(`
+        SELECT r.*, c.name as categoryName 
+        FROM recipes r 
+        LEFT JOIN categories c ON r.categoryId = c.id 
+        ORDER BY r.name
+      `);
       return rows;
     } catch (error) {
       throw error;
@@ -12,17 +17,21 @@ class Recipe {
 
   static async findById(id) {
     try {
-      const [recipeRows] = await pool.execute(
-        'SELECT * FROM recipes WHERE id = ?',
-        [id]
-      );
+      const [recipeRows] = await pool.execute(`
+        SELECT r.*, c.name as categoryName 
+        FROM recipes r 
+        LEFT JOIN categories c ON r.categoryId = c.id 
+        WHERE r.id = ?
+      `, [id]);
       
       if (recipeRows.length === 0) return null;
       
-      const [ingredientRows] = await pool.execute(
-        'SELECT ri.*, m.name as materialName, m.unit FROM recipe_ingredients ri JOIN materials m ON ri.materialId = m.id WHERE ri.recipeId = ?',
-        [id]
-      );
+      const [ingredientRows] = await pool.execute(`
+        SELECT ri.*, m.name as materialName, m.unit 
+        FROM recipe_ingredients ri 
+        JOIN materials m ON ri.materialId = m.id 
+        WHERE ri.recipeId = ?
+      `, [id]);
       
       return {
         ...recipeRows[0],
@@ -34,15 +43,19 @@ class Recipe {
   }
 
   static async create(recipeData) {
-    const { name, category, ingredients } = recipeData;
+    const { name, category, categoryId, ingredients } = recipeData;
     const connection = await pool.getConnection();
     
     try {
       await connection.beginTransaction();
       
+      // Handle undefined values properly
+      const categoryName = category !== undefined ? category : null;
+      const categoryIdValue = categoryId !== undefined ? categoryId : null;
+      
       const [recipeResult] = await connection.execute(
-        'INSERT INTO recipes (name, category) VALUES (?, ?)',
-        [name, category]
+        'INSERT INTO recipes (name, category, categoryId) VALUES (?, ?, ?)',
+        [name, categoryName, categoryIdValue]
       );
       
       const recipeId = recipeResult.insertId;
@@ -55,7 +68,7 @@ class Recipe {
       }
       
       await connection.commit();
-      return { id: recipeId, name, category };
+      return { id: recipeId, name, category: categoryName, categoryId: categoryIdValue };
     } catch (error) {
       await connection.rollback();
       throw error;
@@ -65,15 +78,19 @@ class Recipe {
   }
 
   static async update(id, recipeData) {
-    const { name, category, ingredients } = recipeData;
+    const { name, category, categoryId, ingredients } = recipeData;
     const connection = await pool.getConnection();
     
     try {
       await connection.beginTransaction();
       
+      // Handle undefined values properly
+      const categoryName = category !== undefined ? category : null;
+      const categoryIdValue = categoryId !== undefined ? categoryId : null;
+      
       await connection.execute(
-        'UPDATE recipes SET name = ?, category = ? WHERE id = ?',
-        [name, category, id]
+        'UPDATE recipes SET name = ?, category = ?, categoryId = ? WHERE id = ?',
+        [name, categoryName, categoryIdValue, id]
       );
       
       await connection.execute(
@@ -89,7 +106,7 @@ class Recipe {
       }
       
       await connection.commit();
-      return { id, name, category };
+      return { id, name, category: categoryName, categoryId: categoryIdValue };
     } catch (error) {
       await connection.rollback();
       throw error;
@@ -129,13 +146,12 @@ class Recipe {
       const recipe = await this.findById(id);
       if (!recipe) throw new Error('Recipe not found');
       
-      const [ingredientRows] = await pool.execute(
-        `SELECT ri.*, m.name, m.unit, m.unitPrice 
-         FROM recipe_ingredients ri 
-         JOIN materials m ON ri.materialId = m.id 
-         WHERE ri.recipeId = ?`,
-        [id]
-      );
+      const [ingredientRows] = await pool.execute(`
+        SELECT ri.*, m.name, m.unit, m.unitPrice 
+        FROM recipe_ingredients ri 
+        JOIN materials m ON ri.materialId = m.id 
+        WHERE ri.recipeId = ?
+      `, [id]);
       
       let totalCost = 0;
       const materialsRequired = [];

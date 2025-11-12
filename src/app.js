@@ -4,6 +4,12 @@ const helmet = require('helmet');
 const morgan = require('morgan');
 const rateLimit = require('express-rate-limit');
 
+const uomRoutes = require('./routes/uom');
+const categoryRoutes = require('./routes/categories');
+const supplierRoutes = require('./routes/suppliers');
+const customerRoutes = require('./routes/customers');
+const purchaseOrderRoutes = require('./routes/purchaseOrders');
+
 // Import routes
 const authRoutes = require('./routes/auth');
 const materialRoutes = require('./routes/materials');
@@ -79,6 +85,16 @@ app.use('/api/materials', materialRoutes);
 app.use('/api/recipes', recipeRoutes);
 app.use('/api/production-logs', productionRoutes);
 app.use('/api/reports', reportRoutes);
+
+
+
+app.use('/api/reports', reportRoutes);
+
+app.use('/api/uom', uomRoutes);
+app.use('/api/categories', categoryRoutes);
+app.use('/api/suppliers', supplierRoutes);
+app.use('/api/customers', customerRoutes);
+app.use('/api/purchase-orders', purchaseOrderRoutes);
 
 // Health check endpoint
 app.get('/health', (req, res) => {

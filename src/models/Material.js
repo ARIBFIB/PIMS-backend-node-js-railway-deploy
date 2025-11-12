@@ -3,7 +3,13 @@ const pool = require('../config/database');
 class Material {
   static async getAll() {
     try {
-      const [rows] = await pool.execute('SELECT * FROM materials ORDER BY name');
+      const [rows] = await pool.execute(`
+        SELECT m.*, c.name as categoryName, u.name as uomName, u.symbol as uomSymbol 
+        FROM materials m 
+        LEFT JOIN categories c ON m.categoryId = c.id 
+        LEFT JOIN unit_of_measures u ON m.uomId = u.id 
+        ORDER BY m.name
+      `);
       return rows;
     } catch (error) {
       throw error;
@@ -12,10 +18,13 @@ class Material {
 
   static async findById(id) {
     try {
-      const [rows] = await pool.execute(
-        'SELECT * FROM materials WHERE id = ?',
-        [id]
-      );
+      const [rows] = await pool.execute(`
+        SELECT m.*, c.name as categoryName, u.name as uomName, u.symbol as uomSymbol 
+        FROM materials m 
+        LEFT JOIN categories c ON m.categoryId = c.id 
+        LEFT JOIN unit_of_measures u ON m.uomId = u.id 
+        WHERE m.id = ?
+      `, [id]);
       return rows[0] || null;
     } catch (error) {
       throw error;
@@ -23,12 +32,12 @@ class Material {
   }
 
   static async create(materialData) {
-    const { name, unit, quantity, unitPrice, lowStockThreshold } = materialData;
+    const { name, unit, categoryId, uomId, quantity, unitPrice, lowStockThreshold } = materialData;
     
     try {
       const [result] = await pool.execute(
-        'INSERT INTO materials (name, unit, quantity, unitPrice, lowStockThreshold) VALUES (?, ?, ?, ?, ?)',
-        [name, unit, quantity, unitPrice, lowStockThreshold]
+        'INSERT INTO materials (name, unit, categoryId, uomId, quantity, unitPrice, lowStockThreshold) VALUES (?, ?, ?, ?, ?, ?, ?)',
+        [name, unit, categoryId || null, uomId || null, quantity, unitPrice, lowStockThreshold]
       );
       return { id: result.insertId, ...materialData };
     } catch (error) {
@@ -37,12 +46,52 @@ class Material {
   }
 
   static async update(id, materialData) {
-    const { name, unit, quantity, unitPrice, lowStockThreshold } = materialData;
+    const { name, unit, categoryId, uomId, quantity, unitPrice, lowStockThreshold } = materialData;
+    
+    // Build dynamic query based on provided fields
+    const fields = [];
+    const values = [];
+    
+    if (name !== undefined) {
+      fields.push('name = ?');
+      values.push(name);
+    }
+    if (unit !== undefined) {
+      fields.push('unit = ?');
+      values.push(unit);
+    }
+    if (categoryId !== undefined) {
+      fields.push('categoryId = ?');
+      values.push(categoryId || null);
+    }
+    if (uomId !== undefined) {
+      fields.push('uomId = ?');
+      values.push(uomId || null);
+    }
+    if (quantity !== undefined) {
+      fields.push('quantity = ?');
+      values.push(quantity);
+    }
+    if (unitPrice !== undefined) {
+      fields.push('unitPrice = ?');
+      values.push(unitPrice);
+    }
+    if (lowStockThreshold !== undefined) {
+      fields.push('lowStockThreshold = ?');
+      values.push(lowStockThreshold);
+    }
+    
+    // If no fields to update, return early
+    if (fields.length === 0) {
+      return { id };
+    }
+    
+    values.push(id); // Add id for WHERE clause
     
     try {
       await pool.execute(
-        'UPDATE materials SET name = ?, unit = ?, quantity = ?, unitPrice = ?, lowStockThreshold = ? WHERE id = ?',
-        [name, unit, quantity, unitPrice, lowStockThreshold, id]
+        `UPDATE materials SET ${fields.join(', ')} WHERE id = ?`,
+        values
       );
       return { id, ...materialData };
     } catch (error) {
@@ -64,9 +113,13 @@ class Material {
 
   static async getLowStockItems() {
     try {
-      const [rows] = await pool.execute(
-        'SELECT * FROM materials WHERE quantity <= lowStockThreshold'
-      );
+      const [rows] = await pool.execute(`
+        SELECT m.*, c.name as categoryName, u.name as uomName, u.symbol as uomSymbol 
+        FROM materials m 
+        LEFT JOIN categories c ON m.categoryId = c.id 
+        LEFT JOIN unit_of_measures u ON m.uomId = u.id 
+        WHERE m.quantity <= m.lowStockThreshold
+      `);
       return rows;
     } catch (error) {
       throw error;

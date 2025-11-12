@@ -55,18 +55,20 @@ const updateMaterial = async (req, res) => {
     const { id } = req.params;
     const { name, unit, quantity, unitPrice, lowStockThreshold } = req.body;
     
-    // Validate input
-    if (!name || !unit || quantity === undefined || unitPrice === undefined || lowStockThreshold === undefined) {
-      return res.status(400).json({ message: 'All fields are required' });
+    // Build update object with only provided fields
+    const updateData = {};
+    if (name !== undefined) updateData.name = name;
+    if (unit !== undefined) updateData.unit = unit;
+    if (quantity !== undefined) updateData.quantity = parseFloat(quantity);
+    if (unitPrice !== undefined) updateData.unitPrice = parseFloat(unitPrice);
+    if (lowStockThreshold !== undefined) updateData.lowStockThreshold = parseFloat(lowStockThreshold);
+    
+    // Validate that at least one field is provided
+    if (Object.keys(updateData).length === 0) {
+      return res.status(400).json({ message: 'At least one field is required for update' });
     }
     
-    const material = await Material.update(id, {
-      name,
-      unit,
-      quantity: parseFloat(quantity),
-      unitPrice: parseFloat(unitPrice),
-      lowStockThreshold: parseFloat(lowStockThreshold)
-    });
+    const material = await Material.update(id, updateData);
     
     res.json({ message: 'Material updated successfully', material });
   } catch (error) {

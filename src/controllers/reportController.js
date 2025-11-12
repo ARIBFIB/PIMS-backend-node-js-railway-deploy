@@ -36,6 +36,16 @@ const getInventoryReport = async (req, res) => {
   }
 };
 
+const getLowStockReport = async (req, res) => {
+  try {
+    const materials = await Material.getLowStockItems();
+    res.json(materials);
+  } catch (error) {
+    console.error('Get low stock report error:', error);
+    res.status(500).json({ message: 'Internal server error' });
+  }
+};
+
 const exportReport = async (req, res) => {
   try {
     const { type, format } = req.query;
@@ -58,6 +68,8 @@ const exportReport = async (req, res) => {
       data = await ProductionLog.getAll(filters);
     } else if (type === 'inventory') {
       data = await Material.getAll();
+    } else if (type === 'lowstock') {
+      data = await Material.getLowStockItems();
     } else {
       return res.status(400).json({ message: 'Invalid report type' });
     }
@@ -82,5 +94,6 @@ const exportReport = async (req, res) => {
 module.exports = {
   getProductionReport,
   getInventoryReport,
+  getLowStockReport,
   exportReport
 };
