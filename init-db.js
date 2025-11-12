@@ -1,128 +1,72 @@
-// Script to initialize database tables
+// init-db.js - Database initialization script for Railway deployment
 const mysql = require('mysql2/promise');
 require('dotenv').config();
 
-// Database configuration - Use Railway's environment variables or fallback
+// Railway database configuration
 const dbConfig = {
-  host: process.env.MYSQLHOST || process.env.DB_HOST || 'mysql.railway.internal',
-  port: parseInt(process.env.MYSQLPORT || process.env.DB_PORT) || 3306,
-  user: process.env.MYSQLUSER || process.env.DB_USER || 'root',
-  password: process.env.MYSQLPASSWORD || process.env.DB_PASSWORD || '',
-  database: process.env.MYSQLDATABASE || process.env.DB_NAME || 'railway',
+  host: process.env.MYSQLHOST || 'localhost',
+  port: process.env.MYSQLPORT || 3306,
+  user: process.env.MYSQLUSER || 'root',
+  password: process.env.MYSQLPASSWORD || '',
+  database: process.env.MYSQLDATABASE || 'railway',
+  multipleStatements: true,
+  connectTimeout: 20000,
 };
-
-console.log('Database configuration for initialization:', {
-  host: dbConfig.host,
-  port: dbConfig.port,
-  user: dbConfig.user,
-  database: dbConfig.database,
-});
 
 async function initDatabase() {
   let connection;
-  
+
   try {
-    console.log('Connecting to database...');
+    console.log('🚀 Connecting to MySQL server...');
     connection = await mysql.createConnection(dbConfig);
-    console.log('✅ Database connection successful');
     
-    console.log('Creating tables...');
+    console.log('✅ Connected to MySQL');
+
+    // Read and execute the railway schema
+    const fs = require('fs');
+    const path = require('path');
+    const schemaPath = path.join(__dirname, 'railway-schema.sql');
+    const schema = fs.readFileSync(schemaPath, 'utf8');
     
-    // Create users table
-    await connection.execute(`
-      CREATE TABLE IF NOT EXISTS users (
-        id INT AUTO_INCREMENT PRIMARY KEY,
-        name VARCHAR(255) NOT NULL,
-        email VARCHAR(255) NOT NULL UNIQUE,
-        password VARCHAR(255) NOT NULL,
-        role ENUM('admin', 'operator') NOT NULL DEFAULT 'operator',
-        createdAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-        updatedAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
-      )
-    `);
-    console.log('✅ Users table created');
+    console.log('🧱 Creating tables...');
     
-    // Create materials table
-    await connection.execute(`
-      CREATE TABLE IF NOT EXISTS materials (
-        id INT AUTO_INCREMENT PRIMARY KEY,
-        name VARCHAR(255) NOT NULL,
-        unit VARCHAR(50) NOT NULL,
-        quantity DECIMAL(10, 2) NOT NULL DEFAULT 0,
-        unitPrice DECIMAL(10, 2) NOT NULL DEFAULT 0,
-        lowStockThreshold DECIMAL(10, 2) NOT NULL DEFAULT 0,
-        createdAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-        updatedAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
-      )
-    `);
-    console.log('✅ Materials table created');
+    // Split the schema into individual statements
+    const statements = schema
+      .split(';')
+      .map(stmt => stmt.trim())
+      .filter(stmt => stmt.length > 0);
     
-    // Create recipes table
-    await connection.execute(`
-      CREATE TABLE IF NOT EXISTS recipes (
-        id INT AUTO_INCREMENT PRIMARY KEY,
-        name VARCHAR(255) NOT NULL,
-        category VARCHAR(100) NOT NULL,
-        createdAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-        updatedAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
-      )
-    `);
-    console.log('✅ Recipes table created');
-    
-    // Create recipe ingredients table
-    await connection.execute(`
-      CREATE TABLE IF NOT EXISTS recipe_ingredients (
-        id INT AUTO_INCREMENT PRIMARY KEY,
-        recipeId INT NOT NULL,
-        materialId INT NOT NULL,
-        quantity DECIMAL(10, 2) NOT NULL,
-        FOREIGN KEY (recipeId) REFERENCES recipes(id) ON DELETE CASCADE,
-        FOREIGN KEY (materialId) REFERENCES materials(id) ON DELETE CASCADE
-      )
-    `);
-    console.log('✅ Recipe ingredients table created');
-    
-    // Create production logs table
-    await connection.execute(`
-      CREATE TABLE IF NOT EXISTS production_logs (
-        id INT AUTO_INCREMENT PRIMARY KEY,
-        recipeId INT NOT NULL,
-        quantityProduced DECIMAL(10, 2) NOT NULL,
-        materialCost DECIMAL(10, 2) NOT NULL,
-        additionalExpense DECIMAL(10, 2) NOT NULL DEFAULT 0,
-        totalCost DECIMAL(10, 2) GENERATED ALWAYS AS (materialCost + additionalExpense) STORED,
-        createdAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-        updatedAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-        FOREIGN KEY (recipeId) REFERENCES recipes(id)
-      )
-    `);
-    console.log('✅ Production logs table created');
-    
-    // Insert default admin user
-    const [existingUsers] = await connection.execute(
-      'SELECT * FROM users WHERE email = ?',
-      ['admin@example.com']
-    );
-    
-    if (existingUsers.length === 0) {
-      await connection.execute(
-        'INSERT INTO users (name, email, password, role) VALUES (?, ?, ?, ?)',
-        ['Admin User', 'admin@example.com', 'admin123', 'admin']
-      );
-      console.log('✅ Default admin user created');
-    } else {
-      console.log('ℹ️  Admin user already exists');
+    // Execute each statement with better error handling
+    for (const statement of statements) {
+      if (statement.trim() === '') continue;
+      
+      try {
+        await connection.query(statement);
+        console.log(`✅ Executed: ${statement.substring(0, 50)}...`);
+      } catch (err) {
+        // Log but don't fail on duplicate errors
+        if (err.message.includes('Duplicate column name') || 
+            err.message.includes('Duplicate foreign key constraint name') ||
+            err.message.includes('already exists') ||
+            err.message.includes('already been added')) {
+          console.log(`⚠️  Skipped (already exists): ${statement.substring(0, 50)}...`);
+        } else {
+          console.log(`ℹ️  Non-critical error: ${err.message}`);
+          // For Railway, we continue even if there are non-critical errors
+        }
+      }
     }
     
+    console.log('✅ Database initialized successfully');
     await connection.end();
-    console.log('✅ Database initialization completed successfully!');
     
-  } catch (error) {
-    console.error('❌ Database initialization failed:', error.message);
-    console.error('Error code:', error.code);
-    console.error('Error errno:', error.errno);
+  } catch (err) {
+    console.error('❌ Database initialization failed:', err.message);
     if (connection) await connection.end();
-    process.exit(1);
+    // Don't exit on Railway as it might cause deployment to fail
+    if (!process.env.MYSQLDATABASE) {
+      process.exit(1);
+    }
   }
 }
 

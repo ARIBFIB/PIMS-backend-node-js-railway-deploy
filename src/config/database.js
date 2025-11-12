@@ -24,10 +24,15 @@ async function initDatabase() {
 
     console.log("✅ Connected to MySQL");
 
-    // Create database if not exists
-    await connection.query(`CREATE DATABASE IF NOT EXISTS admin_pims;`);
-    await connection.query(`USE admin_pims;`);
-    console.log("✅ Database 'admin_pims' created/selected");
+    // Create database if not exists (only for local development)
+    // For Railway, the database is already provided
+    if (!process.env.MYSQLDATABASE) {
+      await connection.query(`CREATE DATABASE IF NOT EXISTS admin_pims;`);
+      await connection.query(`USE admin_pims;`);
+      console.log("✅ Database 'admin_pims' created/selected");
+    } else {
+      console.log("✅ Using Railway provided database");
+    }
 
     console.log("🧱 Creating tables...");
 
@@ -175,30 +180,78 @@ async function initDatabase() {
       );
     `);
 
-    // ALTER MATERIALS TABLE
-    await connection.query(`
-      ALTER TABLE materials
-      ADD COLUMN IF NOT EXISTS categoryId INT,
-      ADD COLUMN IF NOT EXISTS uomId INT,
-      ADD FOREIGN KEY (categoryId) REFERENCES categories(id),
-      ADD FOREIGN KEY (uomId) REFERENCES unit_of_measures(id);
-    `);
+    // ALTER MATERIALS TABLE - Check if columns exist before adding them
+    try {
+      const [materialColumns] = await connection.query(`SHOW COLUMNS FROM materials LIKE 'categoryId'`);
+      if (materialColumns.length === 0) {
+        await connection.query(`ALTER TABLE materials ADD COLUMN categoryId INT`);
+        await connection.query(`ALTER TABLE materials ADD FOREIGN KEY (categoryId) REFERENCES categories(id)`);
+      }
+    } catch (err) {
+      if (!err.message.includes('Duplicate column name') && !err.message.includes('already exists')) {
+        throw err;
+      }
+    }
+    
+    try {
+      const [uomColumns] = await connection.query(`SHOW COLUMNS FROM materials LIKE 'uomId'`);
+      if (uomColumns.length === 0) {
+        await connection.query(`ALTER TABLE materials ADD COLUMN uomId INT`);
+        await connection.query(`ALTER TABLE materials ADD FOREIGN KEY (uomId) REFERENCES unit_of_measures(id)`);
+      }
+    } catch (err) {
+      if (!err.message.includes('Duplicate column name') && !err.message.includes('already exists')) {
+        throw err;
+      }
+    }
 
-    // ALTER RECIPES TABLE
-    await connection.query(`
-      ALTER TABLE recipes
-      ADD COLUMN IF NOT EXISTS categoryId INT,
-      ADD FOREIGN KEY (categoryId) REFERENCES categories(id);
-    `);
+    // ALTER RECIPES TABLE - Check if column exists before adding it
+    try {
+      const [recipeColumns] = await connection.query(`SHOW COLUMNS FROM recipes LIKE 'categoryId'`);
+      if (recipeColumns.length === 0) {
+        await connection.query(`ALTER TABLE recipes ADD COLUMN categoryId INT`);
+        await connection.query(`ALTER TABLE recipes ADD FOREIGN KEY (categoryId) REFERENCES categories(id)`);
+      }
+    } catch (err) {
+      if (!err.message.includes('Duplicate column name') && !err.message.includes('already exists')) {
+        throw err;
+      }
+    }
 
-    // ALTER PRODUCTION_LOGS TABLE
-    await connection.query(`
-      ALTER TABLE production_logs
-      ADD COLUMN IF NOT EXISTS customerId INT,
-      ADD COLUMN IF NOT EXISTS batchNumber VARCHAR(50),
-      ADD COLUMN IF NOT EXISTS status ENUM('PENDING', 'COMPLETED', 'CANCELLED') NOT NULL DEFAULT 'PENDING',
-      ADD FOREIGN KEY (customerId) REFERENCES customers(id);
-    `);
+    // ALTER PRODUCTION_LOGS TABLE - Check if columns exist before adding them
+    try {
+      const [prodLogColumns1] = await connection.query(`SHOW COLUMNS FROM production_logs LIKE 'customerId'`);
+      if (prodLogColumns1.length === 0) {
+        await connection.query(`ALTER TABLE production_logs ADD COLUMN customerId INT`);
+        await connection.query(`ALTER TABLE production_logs ADD FOREIGN KEY (customerId) REFERENCES customers(id)`);
+      }
+    } catch (err) {
+      if (!err.message.includes('Duplicate column name') && !err.message.includes('already exists')) {
+        throw err;
+      }
+    }
+    
+    try {
+      const [prodLogColumns2] = await connection.query(`SHOW COLUMNS FROM production_logs LIKE 'batchNumber'`);
+      if (prodLogColumns2.length === 0) {
+        await connection.query(`ALTER TABLE production_logs ADD COLUMN batchNumber VARCHAR(50)`);
+      }
+    } catch (err) {
+      if (!err.message.includes('Duplicate column name') && !err.message.includes('already exists')) {
+        throw err;
+      }
+    }
+    
+    try {
+      const [prodLogColumns3] = await connection.query(`SHOW COLUMNS FROM production_logs LIKE 'status'`);
+      if (prodLogColumns3.length === 0) {
+        await connection.query(`ALTER TABLE production_logs ADD COLUMN status ENUM('PENDING', 'COMPLETED', 'CANCELLED') NOT NULL DEFAULT 'PENDING'`);
+      }
+    } catch (err) {
+      if (!err.message.includes('Duplicate column name') && !err.message.includes('already exists')) {
+        throw err;
+      }
+    }
 
     console.log("✅ All tables and relationships created successfully.");
 
