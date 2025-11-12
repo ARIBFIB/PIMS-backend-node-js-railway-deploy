@@ -260,45 +260,51 @@ async function initDatabase() {
     // Seed data
     console.log("🌱 Inserting initial data...");
 
-    await connection.query(`
-      INSERT INTO users (name, email, password, role)
-      VALUES ('Admin User', 'admin@example.com', 'admin123', 'admin')
-      ON DUPLICATE KEY UPDATE email = email;
-    `);
-
-    await connection.query(`
-      INSERT INTO materials (name, unit, quantity, unitPrice, lowStockThreshold) VALUES
-      ('Flour', 'kg', 200, 120, 50),
-      ('Sugar', 'kg', 100, 140, 30),
-      ('Salt', 'kg', 50, 20, 10),
-      ('Oil', 'l', 30, 150, 5),
-      ('Yeast', 'g', 500, 0.5, 100)
-      ON DUPLICATE KEY UPDATE name = name;
-    `);
-
-    await connection.query(`
-      INSERT INTO recipes (name, category)
-      VALUES ('Bread', 'Bakery')
-      ON DUPLICATE KEY UPDATE name = name;
-    `);
-
-    const [rows] = await connection.query(`SELECT id FROM recipes WHERE name='Bread' LIMIT 1;`);
-    const recipeId = rows[0]?.id;
-
-    if (recipeId) {
+    try {
       await connection.query(`
-        INSERT INTO recipe_ingredients (recipeId, materialId, quantity)
-        VALUES
-        (${recipeId}, (SELECT id FROM materials WHERE name='Flour'), 1),
-        (${recipeId}, (SELECT id FROM materials WHERE name='Sugar'), 0.1),
-        (${recipeId}, (SELECT id FROM materials WHERE name='Salt'), 0.02),
-        (${recipeId}, (SELECT id FROM materials WHERE name='Oil'), 0.1),
-        (${recipeId}, (SELECT id FROM materials WHERE name='Yeast'), 10)
-        ON DUPLICATE KEY UPDATE recipeId = recipeId;
+        INSERT INTO users (name, email, password, role)
+        VALUES ('Admin User', 'admin@example.com', 'admin123', 'admin')
+        ON DUPLICATE KEY UPDATE email = email;
       `);
+
+      await connection.query(`
+        INSERT INTO materials (name, unit, quantity, unitPrice, lowStockThreshold) VALUES
+        ('Flour', 'kg', 200, 120, 50),
+        ('Sugar', 'kg', 100, 140, 30),
+        ('Salt', 'kg', 50, 20, 10),
+        ('Oil', 'l', 30, 150, 5),
+        ('Yeast', 'g', 500, 0.5, 100)
+        ON DUPLICATE KEY UPDATE name = name;
+      `);
+
+      await connection.query(`
+        INSERT INTO recipes (name, category)
+        VALUES ('Bread', 'Bakery')
+        ON DUPLICATE KEY UPDATE name = name;
+      `);
+
+      const [rows] = await connection.query(`SELECT id FROM recipes WHERE name='Bread' LIMIT 1;`);
+      const recipeId = rows[0]?.id;
+
+      if (recipeId) {
+        await connection.query(`
+          INSERT INTO recipe_ingredients (recipeId, materialId, quantity)
+          VALUES
+          (${recipeId}, (SELECT id FROM materials WHERE name='Flour' LIMIT 1), 1),
+          (${recipeId}, (SELECT id FROM materials WHERE name='Sugar' LIMIT 1), 0.1),
+          (${recipeId}, (SELECT id FROM materials WHERE name='Salt' LIMIT 1), 0.02),
+          (${recipeId}, (SELECT id FROM materials WHERE name='Oil' LIMIT 1), 0.1),
+          (${recipeId}, (SELECT id FROM materials WHERE name='Yeast' LIMIT 1), 10)
+          ON DUPLICATE KEY UPDATE recipeId = recipeId;
+        `);
+      }
+
+      console.log("✅ Sample data inserted successfully!");
+    } catch (err) {
+      console.log(`⚠️  Warning: Failed to insert sample data: ${err.message}`);
+      console.log("ℹ️  Continuing with database initialization...");
     }
 
-    console.log("✅ Sample data inserted successfully!");
     console.log("🎉 Database setup completed successfully!");
 
     await connection.end();
