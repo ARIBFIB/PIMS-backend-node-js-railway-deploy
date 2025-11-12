@@ -1,0 +1,32 @@
+# Dependencies
+node_modules
+
+# Testing
+tests
+test-apis.js
+test-db-connection.js
+debug-db-connection.js
+create-db-user.js
+setup-local-db.js
+API-TESTING-REPORT.md
+
+# Git
+.git
+.gitignore
+
+# Environment files
+.env
+.env.local
+.env.production
+
+# Log files
+*.log
+
+# Documentation
+README.md
+
+# Uploads directory
+uploads/
+
+# Nixpacks
+.nixpacks/

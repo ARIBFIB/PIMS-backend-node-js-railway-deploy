@@ -36,24 +36,18 @@ async function initDatabase() {
       .map(stmt => stmt.trim())
       .filter(stmt => stmt.length > 0);
     
-    // Execute each statement with better error handling
+    // Execute each statement
     for (const statement of statements) {
-      if (statement.trim() === '') continue;
-      
       try {
         await connection.query(statement);
-        console.log(`✅ Executed: ${statement.substring(0, 50)}...`);
       } catch (err) {
-        // Log but don't fail on duplicate errors
-        if (err.message.includes('Duplicate column name') || 
-            err.message.includes('Duplicate foreign key constraint name') ||
-            err.message.includes('already exists') ||
-            err.message.includes('already been added')) {
-          console.log(`⚠️  Skipped (already exists): ${statement.substring(0, 50)}...`);
-        } else {
-          console.log(`ℹ️  Non-critical error: ${err.message}`);
-          // For Railway, we continue even if there are non-critical errors
+        // Skip errors for duplicate column additions
+        if (!err.message.includes('Duplicate column name') && 
+            !err.message.includes('Duplicate foreign key constraint name') &&
+            !err.message.includes('already exists')) {
+          throw err;
         }
+        console.log(`⚠️  Skipped (already exists): ${statement.substring(0, 50)}...`);
       }
     }
     
@@ -63,10 +57,7 @@ async function initDatabase() {
   } catch (err) {
     console.error('❌ Database initialization failed:', err.message);
     if (connection) await connection.end();
-    // Don't exit on Railway as it might cause deployment to fail
-    if (!process.env.MYSQLDATABASE) {
-      process.exit(1);
-    }
+    process.exit(1);
   }
 }
 
