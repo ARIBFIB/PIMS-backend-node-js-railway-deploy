@@ -71,7 +71,10 @@ async function initDatabase() {
   } catch (err) {
     console.error('❌ Database initialization failed:', err.message);
     if (connection) await connection.end();
-    process.exit(1);
+    // Don't exit on Railway as it might cause deployment to fail
+    if (!process.env.MYSQLDATABASE) {
+      process.exit(1);
+    }
   }
 }
 
