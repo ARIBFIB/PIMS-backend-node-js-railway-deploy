@@ -8,6 +8,7 @@ const router = express.Router();
 router.get('/', authenticate, productionController.getProductionLogs);
 router.post('/', authenticate, [
   body('recipeId').notEmpty().withMessage('Recipe ID is required'),
+  body('customerId').notEmpty().withMessage('Customer ID is required'),
   body('quantityProduced').isNumeric({ gt: 0 }).withMessage('Quantity produced must be a positive number')
 ], productionController.logProduction);
 router.patch('/:id/approve', authenticate, productionController.approveProduction);

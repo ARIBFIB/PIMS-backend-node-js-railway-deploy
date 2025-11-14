@@ -1,4 +1,4 @@
-const pool = require('../config/dbPool');
+const pool = require('../config/database');
 
 class Supplier {
   static async getAll() {
@@ -23,28 +23,28 @@ class Supplier {
   }
 
   static async create(supplierData) {
-    const { name, contact, email, phone, address } = supplierData;
+    const { name, contact, address } = supplierData;
     
     try {
       const [result] = await pool.execute(
-        'INSERT INTO suppliers (name, contact, email, phone, address) VALUES (?, ?, ?, ?, ?)',
-        [name, contact, email, phone, address]
+        'INSERT INTO suppliers (name, contact, address) VALUES (?, ?, ?)',
+        [name, contact, address]
       );
-      return { id: result.insertId, ...supplierData };
+      return { id: result.insertId, name, contact, address };
     } catch (error) {
       throw error;
     }
   }
 
   static async update(id, supplierData) {
-    const { name, contact, email, phone, address } = supplierData;
+    const { name, contact, address } = supplierData;
     
     try {
       await pool.execute(
-        'UPDATE suppliers SET name = ?, contact = ?, email = ?, phone = ?, address = ? WHERE id = ?',
-        [name, contact, email, phone, address, id]
+        'UPDATE suppliers SET name = ?, contact = ?, address = ? WHERE id = ?',
+        [name, contact, address, id]
       );
-      return { id, ...supplierData };
+      return { id, name, contact, address };
     } catch (error) {
       throw error;
     }

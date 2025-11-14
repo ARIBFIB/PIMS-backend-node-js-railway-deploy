@@ -28,7 +28,7 @@ const getSupplierById = async (req, res) => {
 
 const createSupplier = async (req, res) => {
   try {
-    const { name, contact, email, phone, address } = req.body;
+    const { name, contact, address } = req.body;
     
     // Validate input
     if (!name) {
@@ -38,8 +38,6 @@ const createSupplier = async (req, res) => {
     const supplier = await Supplier.create({
       name,
       contact,
-      email,
-      phone,
       address
     });
     
@@ -53,7 +51,7 @@ const createSupplier = async (req, res) => {
 const updateSupplier = async (req, res) => {
   try {
     const { id } = req.params;
-    const { name, contact, email, phone, address } = req.body;
+    const { name, contact, address } = req.body;
     
     // Validate input
     if (!name) {
@@ -63,8 +61,6 @@ const updateSupplier = async (req, res) => {
     const supplier = await Supplier.update(id, {
       name,
       contact,
-      email,
-      phone,
       address
     });
     

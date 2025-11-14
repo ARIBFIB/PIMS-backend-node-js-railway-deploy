@@ -1,15 +1,38 @@
-const pool = require('../config/dbPool');
+const pool = require('../config/database');
 
 class Recipe {
   static async getAll() {
     try {
-      const [rows] = await pool.execute(`
+      const [recipeRows] = await pool.execute(`
         SELECT r.*, c.name as categoryName 
         FROM recipes r 
         LEFT JOIN categories c ON r.categoryId = c.id 
         ORDER BY r.name
       `);
-      return rows;
+      
+      // Get all ingredients for all recipes
+      const [ingredientRows] = await pool.execute(`
+        SELECT ri.*, m.name as materialName, m.unit, u.name as uomName, u.symbol as uomSymbol
+        FROM recipe_ingredients ri 
+        JOIN materials m ON ri.materialId = m.id 
+        LEFT JOIN unit_of_measures u ON m.uomId = u.id
+        ORDER BY ri.recipeId
+      `);
+      
+      // Group ingredients by recipeId
+      const ingredientsByRecipe = {};
+      ingredientRows.forEach(ingredient => {
+        if (!ingredientsByRecipe[ingredient.recipeId]) {
+          ingredientsByRecipe[ingredient.recipeId] = [];
+        }
+        ingredientsByRecipe[ingredient.recipeId].push(ingredient);
+      });
+      
+      // Add ingredients to each recipe
+      return recipeRows.map(recipe => ({
+        ...recipe,
+        ingredients: ingredientsByRecipe[recipe.id] || []
+      }));
     } catch (error) {
       throw error;
     }
@@ -27,9 +50,10 @@ class Recipe {
       if (recipeRows.length === 0) return null;
       
       const [ingredientRows] = await pool.execute(`
-        SELECT ri.*, m.name as materialName, m.unit 
+        SELECT ri.*, m.name as materialName, m.unit, u.name as uomName, u.symbol as uomSymbol
         FROM recipe_ingredients ri 
         JOIN materials m ON ri.materialId = m.id 
+        LEFT JOIN unit_of_measures u ON m.uomId = u.id
         WHERE ri.recipeId = ?
       `, [id]);
       
@@ -141,15 +165,39 @@ class Recipe {
     }
   }
 
+  static async deleteAll() {
+    const connection = await pool.getConnection();
+    
+    try {
+      await connection.beginTransaction();
+      
+      // Get count of recipes before deleting
+      const [countResult] = await connection.execute('SELECT COUNT(*) as count FROM recipes');
+      const recipeCount = countResult[0].count;
+      
+      await connection.execute('DELETE FROM recipe_ingredients');
+      await connection.execute('DELETE FROM recipes');
+      
+      await connection.commit();
+      return recipeCount;
+    } catch (error) {
+      await connection.rollback();
+      throw error;
+    } finally {
+      connection.release();
+    }
+  }
+
   static async calculateMaterials(id, quantity) {
     try {
       const recipe = await this.findById(id);
       if (!recipe) throw new Error('Recipe not found');
       
       const [ingredientRows] = await pool.execute(`
-        SELECT ri.*, m.name, m.unit, m.unitPrice 
+        SELECT ri.*, m.name, m.unit, m.unitPrice, m.quantity as availableQuantity, m.lowStockThreshold, u.name as uomName, u.symbol as uomSymbol
         FROM recipe_ingredients ri 
         JOIN materials m ON ri.materialId = m.id 
+        LEFT JOIN unit_of_measures u ON m.uomId = u.id
         WHERE ri.recipeId = ?
       `, [id]);
       
@@ -167,7 +215,10 @@ class Recipe {
           quantity: requiredQuantity,
           unit: ingredient.unit,
           unitPrice: ingredient.unitPrice,
-          totalCost: materialCost
+          totalCost: materialCost,
+          availableQuantity: ingredient.availableQuantity,
+          lowStockThreshold: ingredient.lowStockThreshold,
+          isBelowThreshold: (ingredient.availableQuantity - requiredQuantity) < ingredient.lowStockThreshold
         });
       }
       
@@ -176,6 +227,78 @@ class Recipe {
         quantityToProduce: quantity,
         materialsRequired,
         estimatedCost: totalCost
+      };
+    } catch (error) {
+      throw error;
+    }
+  }
+
+  static async calculateMaxProduction(id) {
+    try {
+      const recipe = await this.findById(id);
+      if (!recipe) throw new Error('Recipe not found');
+      
+      const [ingredientRows] = await pool.execute(`
+        SELECT ri.*, m.name, m.unit, m.unitPrice, m.quantity as availableQuantity, m.lowStockThreshold, u.name as uomName, u.symbol as uomSymbol
+        FROM recipe_ingredients ri 
+        JOIN materials m ON ri.materialId = m.id 
+        LEFT JOIN unit_of_measures u ON m.uomId = u.id
+        WHERE ri.recipeId = ?
+      `, [id]);
+      
+      // Calculate maximum quantity that can be produced based on available materials
+      let maxQuantity = Infinity;
+      let limitingFactors = [];
+      
+      for (const ingredient of ingredientRows) {
+        // Calculate maximum quantity based on this ingredient
+        const maxFromThisIngredient = Math.floor(ingredient.availableQuantity / ingredient.quantity);
+        
+        if (maxFromThisIngredient < maxQuantity) {
+          maxQuantity = maxFromThisIngredient;
+          limitingFactors = [{
+            materialName: ingredient.name,
+            available: ingredient.availableQuantity,
+            requiredPerUnit: ingredient.quantity,
+            maxProducible: maxFromThisIngredient
+          }];
+        } else if (maxFromThisIngredient === maxQuantity) {
+          limitingFactors.push({
+            materialName: ingredient.name,
+            available: ingredient.availableQuantity,
+            requiredPerUnit: ingredient.quantity,
+            maxProducible: maxFromThisIngredient
+          });
+        }
+      }
+      
+      // If no ingredients, set max to 0
+      if (ingredientRows.length === 0) {
+        maxQuantity = 0;
+      }
+      
+      // Check which materials would go below threshold
+      const belowThresholdMaterials = [];
+      for (const ingredient of ingredientRows) {
+        const requiredQuantity = ingredient.quantity * maxQuantity;
+        const remainingQuantity = ingredient.availableQuantity - requiredQuantity;
+        
+        if (remainingQuantity < ingredient.lowStockThreshold) {
+          belowThresholdMaterials.push({
+            name: ingredient.name,
+            unit: ingredient.unit,
+            remaining: remainingQuantity,
+            threshold: ingredient.lowStockThreshold,
+            required: requiredQuantity
+          });
+        }
+      }
+      
+      return {
+        recipeName: recipe.name,
+        maxQuantity: maxQuantity === Infinity ? 0 : maxQuantity,
+        limitingFactors,
+        belowThresholdMaterials
       };
     } catch (error) {
       throw error;

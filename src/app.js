@@ -9,6 +9,9 @@ const categoryRoutes = require('./routes/categories');
 const supplierRoutes = require('./routes/suppliers');
 const customerRoutes = require('./routes/customers');
 const purchaseOrderRoutes = require('./routes/purchaseOrders');
+const userRoutes = require('./routes/users');
+const roleRoutes = require('./routes/roles');
+const permissionRoutes = require('./routes/permissions');
 
 // Import routes
 const authRoutes = require('./routes/auth');
@@ -83,7 +86,9 @@ app.use(express.urlencoded({ extended: true }));
 app.use('/api/auth', authRoutes);
 app.use('/api/materials', materialRoutes);
 app.use('/api/recipes', recipeRoutes);
+
 app.use('/api/production-logs', productionRoutes);
+
 app.use('/api/reports', reportRoutes);
 
 app.use('/api/uom', uomRoutes);
@@ -91,6 +96,9 @@ app.use('/api/categories', categoryRoutes);
 app.use('/api/suppliers', supplierRoutes);
 app.use('/api/customers', customerRoutes);
 app.use('/api/purchase-orders', purchaseOrderRoutes);
+app.use('/api/users', userRoutes);
+app.use('/api/roles', roleRoutes);
+app.use('/api/permissions', permissionRoutes);
 
 // Health check endpoint
 app.get('/health', (req, res) => {

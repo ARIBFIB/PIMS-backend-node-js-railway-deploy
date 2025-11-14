@@ -84,6 +84,17 @@ const deleteRecipe = async (req, res) => {
   }
 };
 
+const deleteAllRecipes = async (req, res) => {
+  try {
+    const deletedCount = await Recipe.deleteAll();
+    
+    res.json({ message: `All recipes deleted successfully. ${deletedCount} recipes removed.` });
+  } catch (error) {
+    console.error('Delete all recipes error:', error);
+    res.status(500).json({ message: 'Internal server error' });
+  }
+};
+
 const calculateRecipeMaterials = async (req, res) => {
   try {
     const { id } = req.params;
@@ -102,11 +113,26 @@ const calculateRecipeMaterials = async (req, res) => {
   }
 };
 
+const calculateMaxProduction = async (req, res) => {
+  try {
+    const { id } = req.params;
+    
+    const maxProduction = await Recipe.calculateMaxProduction(id);
+    
+    res.json(maxProduction);
+  } catch (error) {
+    console.error('Calculate max production error:', error);
+    res.status(500).json({ message: 'Internal server error' });
+  }
+};
+
 module.exports = {
   getAllRecipes,
   getRecipeById,
   createRecipe,
   updateRecipe,
   deleteRecipe,
-  calculateRecipeMaterials
+  deleteAllRecipes,
+  calculateRecipeMaterials,
+  calculateMaxProduction
 };

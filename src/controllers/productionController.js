@@ -20,7 +20,7 @@ const getProductionLogs = async (req, res) => {
 
 const logProduction = async (req, res) => {
   try {
-    const { recipeId, customerId, quantityProduced, additionalExpense } = req.body;
+    const { date, batchNumber, recipeId, customerId, quantityProduced, additionalExpense } = req.body;
     
     // Validate input
     if (!recipeId || !quantityProduced || isNaN(quantityProduced) || parseFloat(quantityProduced) <= 0) {
@@ -28,6 +28,8 @@ const logProduction = async (req, res) => {
     }
     
     const log = await ProductionLog.create({
+      date,
+      batchNumber,
       recipeId,
       customerId,
       quantityProduced: parseFloat(quantityProduced),

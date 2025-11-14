@@ -1,11 +1,11 @@
-const pool = require('../config/dbPool');
+const pool = require('../config/database');
 const Material = require('./Material');
 
 class PurchaseOrder {
   static async getAll() {
     try {
       const [rows] = await pool.execute(`
-        SELECT po.*, s.name as supplierName 
+        SELECT po.*, s.id as supplierId, s.name as supplierName 
         FROM purchase_orders po 
         JOIN suppliers s ON po.supplierId = s.id 
         ORDER BY po.createdAt DESC
@@ -20,6 +20,16 @@ class PurchaseOrder {
           WHERE poi.purchaseOrderId = ?
         `, [order.id]);
         order.items = items;
+        
+        // Format supplier as object to match frontend expectations
+        order.supplier = {
+          id: order.supplierId,
+          name: order.supplierName
+        };
+        
+        // Remove duplicate fields
+        delete order.supplierId;
+        delete order.supplierName;
       }
       
       return rows;
@@ -31,7 +41,7 @@ class PurchaseOrder {
   static async findById(id) {
     try {
       const [orderRows] = await pool.execute(`
-        SELECT po.*, s.name as supplierName 
+        SELECT po.*, s.id as supplierId, s.name as supplierName 
         FROM purchase_orders po 
         JOIN suppliers s ON po.supplierId = s.id 
         WHERE po.id = ?
@@ -49,6 +59,17 @@ class PurchaseOrder {
       `, [id]);
       
       order.items = items;
+      
+      // Format supplier as object to match frontend expectations
+      order.supplier = {
+        id: order.supplierId,
+        name: order.supplierName
+      };
+      
+      // Remove duplicate fields
+      delete order.supplierId;
+      delete order.supplierName;
+      
       return order;
     } catch (error) {
       throw error;
@@ -65,7 +86,8 @@ class PurchaseOrder {
       // Calculate subtotal
       let subtotal = 0;
       for (const item of items) {
-        subtotal += item.quantity * item.unitPrice;
+        const unitPrice = item.unitPrice || 0;
+        subtotal += item.quantity * unitPrice;
       }
       
       const tax = subtotal * 0.1; // 10% tax
@@ -86,9 +108,11 @@ class PurchaseOrder {
       
       // Create purchase order items
       for (const item of items) {
+        const unitPrice = item.unitPrice || 0;
+        const totalPrice = item.quantity * unitPrice;
         await connection.execute(
           'INSERT INTO purchase_order_items (purchaseOrderId, materialId, quantity, unitPrice, totalPrice) VALUES (?, ?, ?, ?, ?)',
-          [orderId, item.materialId, item.quantity, item.unitPrice, item.quantity * item.unitPrice]
+          [orderId, item.materialId, item.quantity, unitPrice, totalPrice]
         );
       }
       
@@ -130,6 +154,9 @@ class PurchaseOrder {
       // Update material quantities
       for (const item of order.items) {
         const material = await Material.findById(item.materialId);
+        if (!material) {
+          throw new Error(`Material with ID ${item.materialId} not found`);
+        }
         const newQuantity = material.quantity + item.quantity;
         await Material.updateQuantity(item.materialId, newQuantity);
       }
@@ -174,7 +201,8 @@ class PurchaseOrder {
       // Calculate new subtotal
       let subtotal = 0;
       for (const item of items) {
-        subtotal += item.quantity * item.unitPrice;
+        const unitPrice = item.unitPrice || 0;
+        subtotal += item.quantity * unitPrice;
       }
       
       const tax = subtotal * 0.1; // 10% tax
@@ -194,9 +222,11 @@ class PurchaseOrder {
       
       // Create new items
       for (const item of items) {
+        const unitPrice = item.unitPrice || 0;
+        const totalPrice = item.quantity * unitPrice;
         await connection.execute(
           'INSERT INTO purchase_order_items (purchaseOrderId, materialId, quantity, unitPrice, totalPrice) VALUES (?, ?, ?, ?, ?)',
-          [id, item.materialId, item.quantity, item.unitPrice, item.quantity * item.unitPrice]
+          [id, item.materialId, item.quantity, unitPrice, totalPrice]
         );
       }
       

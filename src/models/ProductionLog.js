@@ -1,4 +1,4 @@
-const pool = require('../config/dbPool');
+const pool = require('../config/database');
 const Recipe = require('./Recipe');
 const Material = require('./Material');
 
@@ -28,7 +28,7 @@ class ProductionLog {
   }
 
   static async create(logData) {
-    const { recipeId, customerId, quantityProduced, additionalExpense = 0 } = logData;
+    const { date, batchNumber, recipeId, customerId, quantityProduced, additionalExpense = 0 } = logData;
     const connection = await pool.getConnection();
     
     try {
@@ -45,10 +45,13 @@ class ProductionLog {
         }
       }
       
-      // Generate batch number
-      const [maxBatchRows] = await connection.execute('SELECT MAX(batchNumber) as maxBatchNumber FROM production_logs');
-      const maxBatchNumber = maxBatchRows[0].maxBatchNumber || 'BATCH-00000';
-      const nextBatchNumber = 'BATCH-' + String(parseInt(maxBatchNumber.split('-')[1]) + 1).padStart(5, '0');
+      // Use provided batch number or generate one
+      let finalBatchNumber = batchNumber;
+      if (!finalBatchNumber) {
+        const [maxBatchRows] = await connection.execute('SELECT MAX(batchNumber) as maxBatchNumber FROM production_logs');
+        const maxBatchNumber = maxBatchRows[0].maxBatchNumber || 'BATCH-00000';
+        finalBatchNumber = 'BATCH-' + String(parseInt(maxBatchNumber.split('-')[1]) + 1).padStart(5, '0');
+      }
       
       // Deduct materials from inventory
       for (const material of calculation.materialsRequired) {
@@ -60,16 +63,17 @@ class ProductionLog {
       // Create production log
       const totalCost = calculation.estimatedCost + parseFloat(additionalExpense);
       const [result] = await connection.execute(
-        'INSERT INTO production_logs (recipeId, customerId, batchNumber, quantityProduced, materialCost, additionalExpense, totalCost, status) VALUES (?, ?, ?, ?, ?, ?, ?, ?)',
-        [recipeId, customerId || null, nextBatchNumber, quantityProduced, calculation.estimatedCost, additionalExpense, totalCost, 'COMPLETED']
+        'INSERT INTO production_logs (date, recipeId, customerId, batchNumber, quantityProduced, materialCost, additionalExpense, totalCost, status) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)',
+        [date || new Date().toISOString().split('T')[0], recipeId, customerId || null, finalBatchNumber, quantityProduced, calculation.estimatedCost, additionalExpense, totalCost, 'COMPLETED']
       );
       
       await connection.commit();
       return {
         id: result.insertId,
+        date,
         recipeId,
         customerId,
-        batchNumber: nextBatchNumber,
+        batchNumber: finalBatchNumber,
         quantityProduced,
         materialCost: calculation.estimatedCost,
         additionalExpense,

@@ -1,4 +1,4 @@
-const pool = require('../config/dbPool');
+const pool = require('../config/database');
 
 class UnitOfMeasure {
   static async getAll() {

@@ -21,5 +21,6 @@ router.put('/:id', authenticate, [
   body('lowStockThreshold').isNumeric().withMessage('Low stock threshold must be a number')
 ], materialController.updateMaterial);
 router.delete('/:id', authenticate, materialController.deleteMaterial);
+router.delete('/', authenticate, materialController.deleteAllMaterials);
 
 module.exports = router;

@@ -5,14 +5,37 @@ const { authenticate } = require('../middleware/auth');
 
 const router = express.Router();
 
+// ✅ Get all suppliers
 router.get('/', authenticate, supplierController.getAllSuppliers);
+
+// ✅ Get supplier by ID
 router.get('/:id', authenticate, supplierController.getSupplierById);
-router.post('/', authenticate, [
-  body('name').notEmpty().withMessage('Supplier name is required')
-], supplierController.createSupplier);
-router.put('/:id', authenticate, [
-  body('name').notEmpty().withMessage('Supplier name is required')
-], supplierController.updateSupplier);
+
+// ✅ Create new supplier
+router.post(
+  '/',
+  authenticate,
+  [
+    body('name').notEmpty().withMessage('Supplier name is required'),
+    body('contact').optional(),
+    body('address').optional(),
+  ],
+  supplierController.createSupplier
+);
+
+// ✅ Update supplier
+router.put(
+  '/:id',
+  authenticate,
+  [
+    body('name').notEmpty().withMessage('Supplier name is required'),
+    body('contact').optional(),
+    body('address').optional(),
+  ],
+  supplierController.updateSupplier
+);
+
+// ✅ Delete supplier
 router.delete('/:id', authenticate, supplierController.deleteSupplier);
 
 module.exports = router;

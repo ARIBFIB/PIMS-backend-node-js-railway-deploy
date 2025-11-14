@@ -3,6 +3,7 @@ const Material = require('../models/Material');
 const getAllMaterials = async (req, res) => {
   try {
     const materials = await Material.getAll();
+    console.log('Retrieved materials:', materials);
     res.json(materials);
   } catch (error) {
     console.error('Get materials error:', error);
@@ -19,6 +20,7 @@ const getMaterialById = async (req, res) => {
       return res.status(404).json({ message: 'Material not found' });
     }
     
+    console.log('Retrieved material by ID:', material);
     res.json(material);
   } catch (error) {
     console.error('Get material error:', error);
@@ -28,7 +30,8 @@ const getMaterialById = async (req, res) => {
 
 const createMaterial = async (req, res) => {
   try {
-    const { name, unit, quantity, unitPrice, lowStockThreshold } = req.body;
+    console.log('Received data for create:', req.body);
+    const { name, unit, quantity, unitPrice, lowStockThreshold, categoryId, uomId } = req.body;
     
     // Validate input
     if (!name || !unit || quantity === undefined || unitPrice === undefined || lowStockThreshold === undefined) {
@@ -40,9 +43,12 @@ const createMaterial = async (req, res) => {
       unit,
       quantity: parseFloat(quantity),
       unitPrice: parseFloat(unitPrice),
-      lowStockThreshold: parseFloat(lowStockThreshold)
+      lowStockThreshold: parseFloat(lowStockThreshold),
+      categoryId,
+      uomId
     });
     
+    console.log('Created material:', material);
     res.status(201).json({ message: 'Material added successfully', material });
   } catch (error) {
     console.error('Create material error:', error);
@@ -52,8 +58,9 @@ const createMaterial = async (req, res) => {
 
 const updateMaterial = async (req, res) => {
   try {
+    console.log('Received data for update:', req.body);
     const { id } = req.params;
-    const { name, unit, quantity, unitPrice, lowStockThreshold } = req.body;
+    const { name, unit, quantity, unitPrice, lowStockThreshold, categoryId, uomId } = req.body;
     
     // Build update object with only provided fields
     const updateData = {};
@@ -62,6 +69,8 @@ const updateMaterial = async (req, res) => {
     if (quantity !== undefined) updateData.quantity = parseFloat(quantity);
     if (unitPrice !== undefined) updateData.unitPrice = parseFloat(unitPrice);
     if (lowStockThreshold !== undefined) updateData.lowStockThreshold = parseFloat(lowStockThreshold);
+    if (categoryId !== undefined) updateData.categoryId = categoryId;
+    if (uomId !== undefined) updateData.uomId = uomId;
     
     // Validate that at least one field is provided
     if (Object.keys(updateData).length === 0) {
@@ -70,6 +79,7 @@ const updateMaterial = async (req, res) => {
     
     const material = await Material.update(id, updateData);
     
+    console.log('Updated material:', material);
     res.json({ message: 'Material updated successfully', material });
   } catch (error) {
     console.error('Update material error:', error);
@@ -80,6 +90,7 @@ const updateMaterial = async (req, res) => {
 const getLowStockItems = async (req, res) => {
   try {
     const materials = await Material.getLowStockItems();
+    console.log('Retrieved low stock items:', materials);
     res.json(materials);
   } catch (error) {
     console.error('Get low stock items error:', error);
@@ -110,11 +121,28 @@ const deleteMaterial = async (req, res) => {
   }
 };
 
+const deleteAllMaterials = async (req, res) => {
+  try {
+    // Delete all materials
+    const deleted = await Material.deleteAll();
+    
+    if (deleted) {
+      res.json({ message: `All materials deleted successfully. ${deleted} materials removed.` });
+    } else {
+      res.status(500).json({ message: 'Failed to delete all materials' });
+    }
+  } catch (error) {
+    console.error('Delete all materials error:', error);
+    res.status(500).json({ message: 'Internal server error' });
+  }
+};
+
 module.exports = {
   getAllMaterials,
   getMaterialById,
   createMaterial,
   updateMaterial,
   deleteMaterial,
+  deleteAllMaterials,
   getLowStockItems
 };
