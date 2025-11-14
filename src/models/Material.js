@@ -1,4 +1,4 @@
-const pool = require('../config/dbPool');
+const { pool } = require('../config/dbPool');
 
 class Material {
   static async getAll() {
