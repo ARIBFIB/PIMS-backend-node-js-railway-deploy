@@ -12,6 +12,9 @@ const dbConfig = {
   connectTimeout: 20000,
 };
 
+// Create connection pool
+const pool = mysql.createPool(dbConfig);
+
 async function initDatabase() {
   let connection;
 
@@ -332,4 +335,4 @@ async function testConnection() {
   }
 }
 
-module.exports = { initDatabase, testConnection };
+module.exports = { initDatabase, testConnection, pool };

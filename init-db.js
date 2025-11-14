@@ -78,4 +78,26 @@ async function initDatabase() {
   }
 }
 
-initDatabase();
+// Test database connection function
+async function testConnection() {
+  let connection;
+  
+  try {
+    console.log('🚀 Testing database connection...');
+    connection = await mysql.createConnection(dbConfig);
+    console.log('✅ Database connection successful');
+    await connection.end();
+    return true;
+  } catch (err) {
+    console.error('❌ Database connection failed:', err.message);
+    if (connection) await connection.end();
+    return false;
+  }
+}
+
+// If this script is run directly, initialize the database
+if (require.main === module) {
+  initDatabase();
+}
+
+module.exports = { initDatabase, testConnection };
