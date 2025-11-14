@@ -205,71 +205,71 @@ async function initDatabase() {
     // Seed data
     console.log("🌱 Inserting initial data...");
 
-    try {
-      await connection.query(`
-        INSERT INTO users (name, email, password, role)
-        VALUES ('Admin User', 'admin@example.com', '$2b$10$IxhgKfJq1yb900HvtYpmqOj95kl2HidCDdkWQSHI8m5Efkpqbfa22', 'admin')
-        ON DUPLICATE KEY UPDATE email = email;
-      `);
+    // try {
+    //   await connection.query(`
+    //     INSERT INTO users (name, email, password, role)
+    //     VALUES ('Admin User', 'admin@example.com', '$2b$10$IxhgKfJq1yb900HvtYpmqOj95kl2HidCDdkWQSHI8m5Efkpqbfa22', 'admin')
+    //     ON DUPLICATE KEY UPDATE email = email;
+    //   `);
 
-      // Insert default categories
-      await connection.query(`
-        INSERT IGNORE INTO categories (code, name) VALUES 
-        ('001', 'Raw Materials'),
-        ('002', 'Packaging'),
-        ('003', 'Finished Goods');
-      `);
+    //   // Insert default categories
+    //   await connection.query(`
+    //     INSERT IGNORE INTO categories (code, name) VALUES 
+    //     ('001', 'Raw Materials'),
+    //     ('002', 'Packaging'),
+    //     ('003', 'Finished Goods');
+    //   `);
 
-      // Insert default unit of measures
-      await connection.query(`
-        INSERT IGNORE INTO unit_of_measures (name, symbol) VALUES 
-        ('Kilogram', 'kg'),
-        ('Gram', 'g'),
-        ('Liter', 'l'),
-        ('Milliliter', 'ml'),
-        ('Piece', 'pc'),
-        ('Box', 'box');
-      `);
+    //   // Insert default unit of measures
+    //   await connection.query(`
+    //     INSERT IGNORE INTO unit_of_measures (name, symbol) VALUES 
+    //     ('Kilogram', 'kg'),
+    //     ('Gram', 'g'),
+    //     ('Liter', 'l'),
+    //     ('Milliliter', 'ml'),
+    //     ('Piece', 'pc'),
+    //     ('Box', 'box');
+    //   `);
 
-      await connection.query(`
-        INSERT INTO materials (name, unit, quantity, unitPrice, lowStockThreshold, categoryId, uomId) VALUES
-        ('Flour', 'kg', 200, 120, 50, (SELECT id FROM categories WHERE code = '001'), (SELECT id FROM unit_of_measures WHERE symbol = 'kg')),
-        ('Sugar', 'kg', 100, 140, 30, (SELECT id FROM categories WHERE code = '001'), (SELECT id FROM unit_of_measures WHERE symbol = 'kg')),
-        ('Salt', 'kg', 50, 20, 10, (SELECT id FROM categories WHERE code = '001'), (SELECT id FROM unit_of_measures WHERE symbol = 'kg')),
-        ('Oil', 'l', 30, 150, 5, (SELECT id FROM categories WHERE code = '001'), (SELECT id FROM unit_of_measures WHERE symbol = 'l')),
-        ('Yeast', 'g', 500, 0.5, 100, (SELECT id FROM categories WHERE code = '001'), (SELECT id FROM unit_of_measures WHERE symbol = 'g'))
-        ON DUPLICATE KEY UPDATE name = name;
-      `);
+    //   await connection.query(`
+    //     INSERT INTO materials (name, unit, quantity, unitPrice, lowStockThreshold, categoryId, uomId) VALUES
+    //     ('Flour', 'kg', 200, 120, 50, (SELECT id FROM categories WHERE code = '001'), (SELECT id FROM unit_of_measures WHERE symbol = 'kg')),
+    //     ('Sugar', 'kg', 100, 140, 30, (SELECT id FROM categories WHERE code = '001'), (SELECT id FROM unit_of_measures WHERE symbol = 'kg')),
+    //     ('Salt', 'kg', 50, 20, 10, (SELECT id FROM categories WHERE code = '001'), (SELECT id FROM unit_of_measures WHERE symbol = 'kg')),
+    //     ('Oil', 'l', 30, 150, 5, (SELECT id FROM categories WHERE code = '001'), (SELECT id FROM unit_of_measures WHERE symbol = 'l')),
+    //     ('Yeast', 'g', 500, 0.5, 100, (SELECT id FROM categories WHERE code = '001'), (SELECT id FROM unit_of_measures WHERE symbol = 'g'))
+    //     ON DUPLICATE KEY UPDATE name = name;
+    //   `);
 
-      await connection.query(`
-        INSERT INTO recipes (name, category, categoryId)
-        VALUES ('Bread', 'Bakery', (SELECT id FROM categories WHERE code = '003'))
-        ON DUPLICATE KEY UPDATE name = name;
-      `);
+    //   await connection.query(`
+    //     INSERT INTO recipes (name, category, categoryId)
+    //     VALUES ('Bread', 'Bakery', (SELECT id FROM categories WHERE code = '003'))
+    //     ON DUPLICATE KEY UPDATE name = name;
+    //   `);
 
-      const [rows] = await connection.query(`SELECT id FROM recipes WHERE name='Bread' LIMIT 1;`);
-      const recipeId = rows[0]?.id;
+    //   const [rows] = await connection.query(`SELECT id FROM recipes WHERE name='Bread' LIMIT 1;`);
+    //   const recipeId = rows[0]?.id;
 
-      if (recipeId) {
-        await connection.query(`
-          INSERT INTO recipe_ingredients (recipeId, materialId, quantity)
-          VALUES
-          (${recipeId}, (SELECT id FROM materials WHERE name='Flour' LIMIT 1), 1),
-          (${recipeId}, (SELECT id FROM materials WHERE name='Sugar' LIMIT 1), 0.1),
-          (${recipeId}, (SELECT id FROM materials WHERE name='Salt' LIMIT 1), 0.02),
-          (${recipeId}, (SELECT id FROM materials WHERE name='Oil' LIMIT 1), 0.1),
-          (${recipeId}, (SELECT id FROM materials WHERE name='Yeast' LIMIT 1), 10)
-          ON DUPLICATE KEY UPDATE recipeId = recipeId;
-        `);
-      }
+    //   if (recipeId) {
+    //     await connection.query(`
+    //       INSERT INTO recipe_ingredients (recipeId, materialId, quantity)
+    //       VALUES
+    //       (${recipeId}, (SELECT id FROM materials WHERE name='Flour' LIMIT 1), 1),
+    //       (${recipeId}, (SELECT id FROM materials WHERE name='Sugar' LIMIT 1), 0.1),
+    //       (${recipeId}, (SELECT id FROM materials WHERE name='Salt' LIMIT 1), 0.02),
+    //       (${recipeId}, (SELECT id FROM materials WHERE name='Oil' LIMIT 1), 0.1),
+    //       (${recipeId}, (SELECT id FROM materials WHERE name='Yeast' LIMIT 1), 10)
+    //       ON DUPLICATE KEY UPDATE recipeId = recipeId;
+    //     `);
+    //   }
 
-      console.log("✅ Sample data inserted successfully!");
-    } catch (err) {
-      console.log(`⚠️  Warning: Failed to insert sample data: ${err.message}`);
-      console.log("ℹ️  Continuing with database initialization...");
-    }
+    //   console.log("✅ Sample data inserted successfully!");
+    // } catch (err) {
+    //   console.log(`⚠️  Warning: Failed to insert sample data: ${err.message}`);
+    //   console.log("ℹ️  Continuing with database initialization...");
+    // }
 
-    console.log("🎉 Database setup completed successfully!");
+    // console.log("🎉 Database setup completed successfully!");
 
     await connection.end();
   } catch (err) {

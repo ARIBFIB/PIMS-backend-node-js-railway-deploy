@@ -2,45 +2,29 @@ const Material = require('../models/Material');
 
 const getAllMaterials = async (req, res) => {
   try {
-    console.log('Fetching all materials...');
-    // Check schema first for debugging
-    await Material.checkSchema();
     const materials = await Material.getAll();
-    console.log('Retrieved materials count:', materials.length);
+    console.log('Retrieved materials:', materials);
     res.json(materials);
   } catch (error) {
     console.error('Get materials error:', error);
-    console.error('Error name:', error.name);
-    console.error('Error message:', error.message);
-    console.error('Error stack:', error.stack);
-    res.status(500).json({ 
-      message: 'Internal server error',
-      error: process.env.NODE_ENV === 'development' ? error.message : undefined
-    });
+    res.status(500).json({ message: 'Internal server error' });
   }
 };
 
 const getMaterialById = async (req, res) => {
   try {
     const { id } = req.params;
-    console.log('Fetching material by ID:', id);
     const material = await Material.findById(id);
     
     if (!material) {
       return res.status(404).json({ message: 'Material not found' });
     }
     
-    console.log('Retrieved material:', material);
+    console.log('Retrieved material by ID:', material);
     res.json(material);
   } catch (error) {
     console.error('Get material error:', error);
-    console.error('Error name:', error.name);
-    console.error('Error message:', error.message);
-    console.error('Error stack:', error.stack);
-    res.status(500).json({ 
-      message: 'Internal server error',
-      error: process.env.NODE_ENV === 'development' ? error.message : undefined
-    });
+    res.status(500).json({ message: 'Internal server error' });
   }
 };
 
@@ -53,10 +37,6 @@ const createMaterial = async (req, res) => {
     if (!name || !unit || quantity === undefined || unitPrice === undefined || lowStockThreshold === undefined) {
       return res.status(400).json({ message: 'All fields are required' });
     }
-    
-    console.log('Creating material with data:', {
-      name, unit, quantity, unitPrice, lowStockThreshold, categoryId, uomId
-    });
     
     const material = await Material.create({
       name,
@@ -72,13 +52,7 @@ const createMaterial = async (req, res) => {
     res.status(201).json({ message: 'Material added successfully', material });
   } catch (error) {
     console.error('Create material error:', error);
-    console.error('Error name:', error.name);
-    console.error('Error message:', error.message);
-    console.error('Error stack:', error.stack);
-    res.status(500).json({ 
-      message: 'Internal server error',
-      error: process.env.NODE_ENV === 'development' ? error.message : undefined
-    });
+    res.status(500).json({ message: 'Internal server error' });
   }
 };
 
@@ -103,48 +77,30 @@ const updateMaterial = async (req, res) => {
       return res.status(400).json({ message: 'At least one field is required for update' });
     }
     
-    console.log('Updating material ID:', id, 'with data:', updateData);
-    
     const material = await Material.update(id, updateData);
     
     console.log('Updated material:', material);
     res.json({ message: 'Material updated successfully', material });
   } catch (error) {
     console.error('Update material error:', error);
-    console.error('Error name:', error.name);
-    console.error('Error message:', error.message);
-    console.error('Error stack:', error.stack);
-    res.status(500).json({ 
-      message: 'Internal server error',
-      error: process.env.NODE_ENV === 'development' ? error.message : undefined
-    });
+    res.status(500).json({ message: 'Internal server error' });
   }
 };
 
 const getLowStockItems = async (req, res) => {
   try {
-    console.log('Fetching low stock items...');
-    // Check schema first for debugging
-    await Material.checkSchema();
     const materials = await Material.getLowStockItems();
-    console.log('Retrieved low stock items count:', materials.length);
+    console.log('Retrieved low stock items:', materials);
     res.json(materials);
   } catch (error) {
     console.error('Get low stock items error:', error);
-    console.error('Error name:', error.name);
-    console.error('Error message:', error.message);
-    console.error('Error stack:', error.stack);
-    res.status(500).json({ 
-      message: 'Internal server error',
-      error: process.env.NODE_ENV === 'development' ? error.message : undefined
-    });
+    res.status(500).json({ message: 'Internal server error' });
   }
 };
 
 const deleteMaterial = async (req, res) => {
   try {
     const { id } = req.params;
-    console.log('Deleting material ID:', id);
     
     // Check if material exists
     const material = await Material.findById(id);
@@ -161,19 +117,12 @@ const deleteMaterial = async (req, res) => {
     }
   } catch (error) {
     console.error('Delete material error:', error);
-    console.error('Error name:', error.name);
-    console.error('Error message:', error.message);
-    console.error('Error stack:', error.stack);
-    res.status(500).json({ 
-      message: 'Internal server error',
-      error: process.env.NODE_ENV === 'development' ? error.message : undefined
-    });
+    res.status(500).json({ message: 'Internal server error' });
   }
 };
 
 const deleteAllMaterials = async (req, res) => {
   try {
-    console.log('Deleting all materials...');
     // Delete all materials
     const deleted = await Material.deleteAll();
     
@@ -184,13 +133,7 @@ const deleteAllMaterials = async (req, res) => {
     }
   } catch (error) {
     console.error('Delete all materials error:', error);
-    console.error('Error name:', error.name);
-    console.error('Error message:', error.message);
-    console.error('Error stack:', error.stack);
-    res.status(500).json({ 
-      message: 'Internal server error',
-      error: process.env.NODE_ENV === 'development' ? error.message : undefined
-    });
+    res.status(500).json({ message: 'Internal server error' });
   }
 };
 

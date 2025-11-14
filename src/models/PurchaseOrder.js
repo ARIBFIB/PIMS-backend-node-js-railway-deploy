@@ -1,4 +1,4 @@
-const { pool } = require('../config/database');
+const pool = require('../config/database');
 const Material = require('./Material');
 
 class PurchaseOrder {
@@ -198,12 +198,6 @@ class PurchaseOrder {
         throw new Error('Only pending orders can be updated');
       }
       
-      // Delete existing items
-      await connection.execute(
-        'DELETE FROM purchase_order_items WHERE purchaseOrderId = ?',
-        [id]
-      );
-      
       // Calculate new subtotal
       let subtotal = 0;
       for (const item of items) {
@@ -220,7 +214,13 @@ class PurchaseOrder {
         [supplierId, subtotal, tax, total, id]
       );
       
-      // Create new purchase order items
+      // Delete existing items
+      await connection.execute(
+        'DELETE FROM purchase_order_items WHERE purchaseOrderId = ?',
+        [id]
+      );
+      
+      // Create new items
       for (const item of items) {
         const unitPrice = item.unitPrice || 0;
         const totalPrice = item.quantity * unitPrice;
@@ -260,56 +260,20 @@ class PurchaseOrder {
         throw new Error('Only pending orders can be deleted');
       }
       
-      // Delete items first (due to foreign key constraint)
+      // Delete order items
       await connection.execute(
         'DELETE FROM purchase_order_items WHERE purchaseOrderId = ?',
         [id]
       );
       
-      // Delete purchase order
-      await connection.execute(
+      // Delete order
+      const [result] = await connection.execute(
         'DELETE FROM purchase_orders WHERE id = ?',
         [id]
       );
       
       await connection.commit();
-      return { id };
-    } catch (error) {
-      await connection.rollback();
-      throw error;
-    } finally {
-      connection.release();
-    }
-  }
-
-  static async cancel(id) {
-    const connection = await pool.getConnection();
-    
-    try {
-      await connection.beginTransaction();
-      
-      // Check if order exists
-      const [orderRows] = await connection.execute(
-        'SELECT status FROM purchase_orders WHERE id = ?',
-        [id]
-      );
-      
-      if (orderRows.length === 0) {
-        throw new Error('Purchase order not found');
-      }
-      
-      if (orderRows[0].status === 'CANCELLED') {
-        throw new Error('Order is already cancelled');
-      }
-      
-      // Update order status
-      await connection.execute(
-        'UPDATE purchase_orders SET status = ? WHERE id = ?',
-        ['CANCELLED', id]
-      );
-      
-      await connection.commit();
-      return { id, status: 'CANCELLED' };
+      return result.affectedRows > 0;
     } catch (error) {
       await connection.rollback();
       throw error;
