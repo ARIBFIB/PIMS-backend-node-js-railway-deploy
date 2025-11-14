@@ -1,6 +1,8 @@
 require('dotenv').config();
 const app = require('./src/app');
 const { initDatabase, testConnection } = require('./src/config/database');
+const { pool } = require('./src/config/database');
+const bcrypt = require('bcryptjs');
 
 const PORT = process.env.PORT || 4000;
 
@@ -14,6 +16,9 @@ async function startServer() {
       console.log('Initializing database...');
       await initDatabase();
       console.log('Database initialized successfully');
+      
+      // Fix admin password if it's plain text
+      await fixAdminPasswordIfNecessary();
     } else {
       console.warn('⚠️  Database connection failed. Starting server without database initialization.');
       console.warn('This is normal for Railway deployments where the database may not be ready yet.');
@@ -30,6 +35,9 @@ async function startServer() {
           try {
             await initDatabase();
             console.log('✅ Database initialized successfully on retry');
+            
+            // Fix admin password if it's plain text
+            await fixAdminPasswordIfNecessary();
           } catch (err) {
             console.error('❌ Database initialization failed on retry:', err.message);
           }
@@ -63,6 +71,44 @@ async function startServer() {
   } catch (err) {
     console.error('❌ Failed to start server:', err);
     process.exit(1);
+  }
+}
+
+// Function to fix admin password if it's plain text
+async function fixAdminPasswordIfNecessary() {
+  try {
+    console.log('Checking if admin password needs to be fixed...');
+    
+    // Get the admin user
+    const [rows] = await pool.execute(
+      'SELECT id, password FROM users WHERE email = ?',
+      ['admin@example.com']
+    );
+    
+    if (rows.length > 0) {
+      const user = rows[0];
+      // Check if password is plain text (not a bcrypt hash)
+      if (!user.password.startsWith('$2b$')) {
+        console.log('Admin user has plain text password. Fixing...');
+        
+        // Hash the password
+        const hashedPassword = await bcrypt.hash('admin123', 10);
+        
+        // Update the admin user's password
+        await pool.execute(
+          'UPDATE users SET password = ? WHERE id = ?',
+          [hashedPassword, user.id]
+        );
+        
+        console.log('✅ Admin user password has been fixed!');
+      } else {
+        console.log('Admin user password is already properly hashed.');
+      }
+    } else {
+      console.log('No admin user found.');
+    }
+  } catch (error) {
+    console.error('Error fixing admin password:', error.message);
   }
 }
 
