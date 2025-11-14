@@ -101,10 +101,10 @@ async function setupDatabase() {
     
     console.log('Tables created successfully');
     
-    // Insert default admin user with plain text password for testing
+    // Insert default admin user with properly hashed password
     await connection.execute(
       `INSERT IGNORE INTO users (name, email, password, role) VALUES (?, ?, ?, ?)`,
-      ['Admin User', 'admin@example.com', 'admin123', 'admin']  // Plain text password
+      ['Admin User', 'admin@example.com', '$2b$10$IxhgKfJq1yb900HvtYpmqOj95kl2HidCDdkWQSHI8m5Efkpqbfa22', 'admin']  // Properly hashed password
     );
     
     console.log('Default admin user created (email: admin@example.com, password: admin123)');
