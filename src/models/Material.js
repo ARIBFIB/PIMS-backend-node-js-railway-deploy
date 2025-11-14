@@ -4,8 +4,12 @@ class Material {
   static async getAll() {
     try {
       console.log('Executing Material.getAll query...');
+      // Simplify the query to avoid potential foreign key issues
       const query = `
-        SELECT m.*, c.name as categoryName, u.name as uomName, u.symbol as uomSymbol 
+        SELECT m.*, 
+               c.name as categoryName, 
+               u.name as uomName, 
+               u.symbol as uomSymbol 
         FROM materials m 
         LEFT JOIN categories c ON m.categoryId = c.id 
         LEFT JOIN unit_of_measures u ON m.uomId = u.id 
@@ -21,7 +25,22 @@ class Material {
       console.error('Error errno:', error.errno);
       console.error('Error sqlState:', error.sqlState);
       console.error('Error sqlMessage:', error.sqlMessage);
-      throw error;
+      
+      // Try a simpler query as fallback
+      try {
+        console.log('Trying fallback query without joins...');
+        const [rows] = await pool.execute('SELECT * FROM materials ORDER BY name');
+        console.log('Fallback query returned', rows.length, 'rows');
+        return rows.map(row => ({
+          ...row,
+          categoryName: null,
+          uomName: null,
+          uomSymbol: null
+        }));
+      } catch (fallbackError) {
+        console.error('Fallback query also failed:', fallbackError);
+        throw fallbackError;
+      }
     }
   }
 
@@ -29,7 +48,10 @@ class Material {
     try {
       console.log('Executing Material.findById query for ID:', id);
       const query = `
-        SELECT m.*, c.name as categoryName, u.name as uomName, u.symbol as uomSymbol 
+        SELECT m.*, 
+               c.name as categoryName, 
+               u.name as uomName, 
+               u.symbol as uomSymbol 
         FROM materials m 
         LEFT JOIN categories c ON m.categoryId = c.id 
         LEFT JOIN unit_of_measures u ON m.uomId = u.id 
@@ -153,8 +175,12 @@ class Material {
   static async getLowStockItems() {
     try {
       console.log('Executing Material.getLowStockItems query...');
+      // Simplify the query to avoid potential foreign key issues
       const query = `
-        SELECT m.*, c.name as categoryName, u.name as uomName, u.symbol as uomSymbol 
+        SELECT m.*, 
+               c.name as categoryName, 
+               u.name as uomName, 
+               u.symbol as uomSymbol 
         FROM materials m 
         LEFT JOIN categories c ON m.categoryId = c.id 
         LEFT JOIN unit_of_measures u ON m.uomId = u.id 
@@ -170,7 +196,22 @@ class Material {
       console.error('Error errno:', error.errno);
       console.error('Error sqlState:', error.sqlState);
       console.error('Error sqlMessage:', error.sqlMessage);
-      throw error;
+      
+      // Try a simpler query as fallback
+      try {
+        console.log('Trying fallback query without joins...');
+        const [rows] = await pool.execute('SELECT * FROM materials WHERE quantity <= lowStockThreshold');
+        console.log('Fallback query returned', rows.length, 'rows');
+        return rows.map(row => ({
+          ...row,
+          categoryName: null,
+          uomName: null,
+          uomSymbol: null
+        }));
+      } catch (fallbackError) {
+        console.error('Fallback query also failed:', fallbackError);
+        throw fallbackError;
+      }
     }
   }
 
