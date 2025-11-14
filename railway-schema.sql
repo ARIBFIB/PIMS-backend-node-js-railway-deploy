@@ -244,3 +244,7 @@ SELECT r.id, p.id
 FROM roles r, permissions p 
 WHERE r.name = 'operator' 
 AND p.name IN ('view_materials', 'view_recipes', 'view_production', 'view_purchase_orders', 'view_reports');
+
+-- Insert default admin user with hashed password
+INSERT IGNORE INTO users (name, email, password, role) 
+VALUES ('Admin User', 'admin@example.com', '$2b$10$IxhgKfJq1yb900HvtYpmqOj95kl2HidCDdkWQSHI8m5Efkpqbfa22', 'admin');
