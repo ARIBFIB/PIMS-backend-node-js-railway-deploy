@@ -4,6 +4,16 @@ class Material {
   static async getAll() {
     try {
       console.log('Executing Material.getAll query...');
+      
+      // First, let's check if the referenced tables have data
+      try {
+        const [categories] = await pool.execute('SELECT COUNT(*) as count FROM categories');
+        const [uoms] = await pool.execute('SELECT COUNT(*) as count FROM unit_of_measures');
+        console.log('Categories count:', categories[0].count, 'UOMs count:', uoms[0].count);
+      } catch (checkError) {
+        console.error('Error checking reference tables:', checkError);
+      }
+      
       // Simplify the query to avoid potential foreign key issues
       const query = `
         SELECT m.*, 
@@ -47,6 +57,16 @@ class Material {
   static async findById(id) {
     try {
       console.log('Executing Material.findById query for ID:', id);
+      
+      // First, let's check if the referenced tables have data
+      try {
+        const [categories] = await pool.execute('SELECT COUNT(*) as count FROM categories');
+        const [uoms] = await pool.execute('SELECT COUNT(*) as count FROM unit_of_measures');
+        console.log('Categories count:', categories[0].count, 'UOMs count:', uoms[0].count);
+      } catch (checkError) {
+        console.error('Error checking reference tables:', checkError);
+      }
+      
       const query = `
         SELECT m.*, 
                c.name as categoryName, 
@@ -175,6 +195,16 @@ class Material {
   static async getLowStockItems() {
     try {
       console.log('Executing Material.getLowStockItems query...');
+      
+      // First, let's check if the referenced tables have data
+      try {
+        const [categories] = await pool.execute('SELECT COUNT(*) as count FROM categories');
+        const [uoms] = await pool.execute('SELECT COUNT(*) as count FROM unit_of_measures');
+        console.log('Categories count:', categories[0].count, 'UOMs count:', uoms[0].count);
+      } catch (checkError) {
+        console.error('Error checking reference tables:', checkError);
+      }
+      
       // Simplify the query to avoid potential foreign key issues
       const query = `
         SELECT m.*, 
@@ -247,6 +277,36 @@ class Material {
       console.error('Error sqlState:', error.sqlState);
       console.error('Error sqlMessage:', error.sqlMessage);
       throw error;
+    }
+  }
+  
+  // Add a method to check database schema
+  static async checkSchema() {
+    try {
+      console.log('Checking database schema...');
+      
+      // Check if tables exist
+      const [tables] = await pool.execute("SHOW TABLES LIKE 'materials'");
+      console.log('Materials table exists:', tables.length > 0);
+      
+      if (tables.length > 0) {
+        // Check table structure
+        const [columns] = await pool.execute("DESCRIBE materials");
+        console.log('Materials table columns:', columns);
+        
+        // Check foreign key constraints
+        const [foreignKeys] = await pool.execute(
+          "SELECT CONSTRAINT_NAME, TABLE_NAME, COLUMN_NAME, REFERENCED_TABLE_NAME, REFERENCED_COLUMN_NAME " +
+          "FROM INFORMATION_SCHEMA.KEY_COLUMN_USAGE " +
+          "WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'materials' AND REFERENCED_TABLE_NAME IS NOT NULL"
+        );
+        console.log('Materials foreign keys:', foreignKeys);
+      }
+      
+      return true;
+    } catch (error) {
+      console.error('Error checking schema:', error);
+      return false;
     }
   }
 }

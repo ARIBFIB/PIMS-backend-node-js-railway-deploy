@@ -3,6 +3,8 @@ const Material = require('../models/Material');
 const getAllMaterials = async (req, res) => {
   try {
     console.log('Fetching all materials...');
+    // Check schema first for debugging
+    await Material.checkSchema();
     const materials = await Material.getAll();
     console.log('Retrieved materials count:', materials.length);
     res.json(materials);
@@ -122,6 +124,8 @@ const updateMaterial = async (req, res) => {
 const getLowStockItems = async (req, res) => {
   try {
     console.log('Fetching low stock items...');
+    // Check schema first for debugging
+    await Material.checkSchema();
     const materials = await Material.getLowStockItems();
     console.log('Retrieved low stock items count:', materials.length);
     res.json(materials);
