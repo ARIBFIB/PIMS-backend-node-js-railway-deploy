@@ -197,6 +197,11 @@ async function initDatabase() {
 
     console.log("✅ All tables and relationships created successfully.");
 
+    // Check if tables exist
+    console.log("🔍 Checking if tables exist...");
+    const [tables] = await connection.query("SHOW TABLES");
+    console.log("Tables in database:", tables);
+
     // Seed data
     console.log("🌱 Inserting initial data...");
 

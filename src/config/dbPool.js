@@ -12,7 +12,24 @@ const dbConfig = {
   queueLimit: 0
 };
 
+console.log('Database configuration:', {
+  host: dbConfig.host,
+  port: dbConfig.port,
+  user: dbConfig.user,
+  database: dbConfig.database
+});
+
 // Create connection pool
 const pool = mysql.createPool(dbConfig);
+
+// Test the pool connection
+pool.getConnection()
+  .then(connection => {
+    console.log('✅ Database pool connection successful');
+    connection.release();
+  })
+  .catch(error => {
+    console.error('❌ Database pool connection failed:', error.message);
+  });
 
 module.exports = pool;
