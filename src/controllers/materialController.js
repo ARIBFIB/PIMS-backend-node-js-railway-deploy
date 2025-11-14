@@ -8,6 +8,9 @@ const getAllMaterials = async (req, res) => {
     res.json(materials);
   } catch (error) {
     console.error('Get materials error:', error);
+    console.error('Error name:', error.name);
+    console.error('Error message:', error.message);
+    console.error('Error stack:', error.stack);
     res.status(500).json({ 
       message: 'Internal server error',
       error: process.env.NODE_ENV === 'development' ? error.message : undefined
@@ -29,6 +32,9 @@ const getMaterialById = async (req, res) => {
     res.json(material);
   } catch (error) {
     console.error('Get material error:', error);
+    console.error('Error name:', error.name);
+    console.error('Error message:', error.message);
+    console.error('Error stack:', error.stack);
     res.status(500).json({ 
       message: 'Internal server error',
       error: process.env.NODE_ENV === 'development' ? error.message : undefined
@@ -64,6 +70,9 @@ const createMaterial = async (req, res) => {
     res.status(201).json({ message: 'Material added successfully', material });
   } catch (error) {
     console.error('Create material error:', error);
+    console.error('Error name:', error.name);
+    console.error('Error message:', error.message);
+    console.error('Error stack:', error.stack);
     res.status(500).json({ 
       message: 'Internal server error',
       error: process.env.NODE_ENV === 'development' ? error.message : undefined
@@ -100,6 +109,9 @@ const updateMaterial = async (req, res) => {
     res.json({ message: 'Material updated successfully', material });
   } catch (error) {
     console.error('Update material error:', error);
+    console.error('Error name:', error.name);
+    console.error('Error message:', error.message);
+    console.error('Error stack:', error.stack);
     res.status(500).json({ 
       message: 'Internal server error',
       error: process.env.NODE_ENV === 'development' ? error.message : undefined
@@ -115,6 +127,9 @@ const getLowStockItems = async (req, res) => {
     res.json(materials);
   } catch (error) {
     console.error('Get low stock items error:', error);
+    console.error('Error name:', error.name);
+    console.error('Error message:', error.message);
+    console.error('Error stack:', error.stack);
     res.status(500).json({ 
       message: 'Internal server error',
       error: process.env.NODE_ENV === 'development' ? error.message : undefined
@@ -142,6 +157,9 @@ const deleteMaterial = async (req, res) => {
     }
   } catch (error) {
     console.error('Delete material error:', error);
+    console.error('Error name:', error.name);
+    console.error('Error message:', error.message);
+    console.error('Error stack:', error.stack);
     res.status(500).json({ 
       message: 'Internal server error',
       error: process.env.NODE_ENV === 'development' ? error.message : undefined
@@ -162,6 +180,9 @@ const deleteAllMaterials = async (req, res) => {
     }
   } catch (error) {
     console.error('Delete all materials error:', error);
+    console.error('Error name:', error.name);
+    console.error('Error message:', error.message);
+    console.error('Error stack:', error.stack);
     res.status(500).json({ 
       message: 'Internal server error',
       error: process.env.NODE_ENV === 'development' ? error.message : undefined

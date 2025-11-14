@@ -26,10 +26,28 @@ const pool = mysql.createPool(dbConfig);
 pool.getConnection()
   .then(connection => {
     console.log('✅ Database pool connection successful');
-    connection.release();
+    // Test a simple query
+    connection.query('SELECT 1+1 AS solution')
+      .then(([rows]) => {
+        console.log('✅ Database query test successful:', rows[0].solution);
+        connection.release();
+      })
+      .catch(error => {
+        console.error('❌ Database query test failed:', error.message);
+        connection.release();
+      });
   })
   .catch(error => {
     console.error('❌ Database pool connection failed:', error.message);
   });
+
+// Add event listeners for debugging
+pool.on('connection', (connection) => {
+  console.log('✅ New database connection established');
+});
+
+pool.on('error', (error) => {
+  console.error('❌ Database pool error:', error.message);
+});
 
 module.exports = pool;

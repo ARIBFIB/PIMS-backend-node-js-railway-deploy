@@ -4,17 +4,23 @@ class Material {
   static async getAll() {
     try {
       console.log('Executing Material.getAll query...');
-      const [rows] = await pool.execute(`
+      const query = `
         SELECT m.*, c.name as categoryName, u.name as uomName, u.symbol as uomSymbol 
         FROM materials m 
         LEFT JOIN categories c ON m.categoryId = c.id 
         LEFT JOIN unit_of_measures u ON m.uomId = u.id 
         ORDER BY m.name
-      `);
+      `;
+      console.log('Query:', query);
+      const [rows] = await pool.execute(query);
       console.log('Material.getAll query returned', rows.length, 'rows');
       return rows;
     } catch (error) {
       console.error('Error in Material.getAll:', error);
+      console.error('Error code:', error.code);
+      console.error('Error errno:', error.errno);
+      console.error('Error sqlState:', error.sqlState);
+      console.error('Error sqlMessage:', error.sqlMessage);
       throw error;
     }
   }
@@ -22,17 +28,23 @@ class Material {
   static async findById(id) {
     try {
       console.log('Executing Material.findById query for ID:', id);
-      const [rows] = await pool.execute(`
+      const query = `
         SELECT m.*, c.name as categoryName, u.name as uomName, u.symbol as uomSymbol 
         FROM materials m 
         LEFT JOIN categories c ON m.categoryId = c.id 
         LEFT JOIN unit_of_measures u ON m.uomId = u.id 
         WHERE m.id = ?
-      `, [id]);
+      `;
+      console.log('Query:', query);
+      const [rows] = await pool.execute(query, [id]);
       console.log('Material.findById query returned', rows.length, 'rows');
       return rows[0] || null;
     } catch (error) {
       console.error('Error in Material.findById:', error);
+      console.error('Error code:', error.code);
+      console.error('Error errno:', error.errno);
+      console.error('Error sqlState:', error.sqlState);
+      console.error('Error sqlMessage:', error.sqlMessage);
       throw error;
     }
   }
@@ -50,6 +62,10 @@ class Material {
       return { id: result.insertId, ...materialData };
     } catch (error) {
       console.error('Error in Material.create:', error);
+      console.error('Error code:', error.code);
+      console.error('Error errno:', error.errno);
+      console.error('Error sqlState:', error.sqlState);
+      console.error('Error sqlMessage:', error.sqlMessage);
       throw error;
     }
   }
@@ -107,6 +123,10 @@ class Material {
       return { id, ...materialData };
     } catch (error) {
       console.error('Error in Material.update:', error);
+      console.error('Error code:', error.code);
+      console.error('Error errno:', error.errno);
+      console.error('Error sqlState:', error.sqlState);
+      console.error('Error sqlMessage:', error.sqlMessage);
       throw error;
     }
   }
@@ -122,6 +142,10 @@ class Material {
       return { id, quantity };
     } catch (error) {
       console.error('Error in Material.updateQuantity:', error);
+      console.error('Error code:', error.code);
+      console.error('Error errno:', error.errno);
+      console.error('Error sqlState:', error.sqlState);
+      console.error('Error sqlMessage:', error.sqlMessage);
       throw error;
     }
   }
@@ -129,17 +153,23 @@ class Material {
   static async getLowStockItems() {
     try {
       console.log('Executing Material.getLowStockItems query...');
-      const [rows] = await pool.execute(`
+      const query = `
         SELECT m.*, c.name as categoryName, u.name as uomName, u.symbol as uomSymbol 
         FROM materials m 
         LEFT JOIN categories c ON m.categoryId = c.id 
         LEFT JOIN unit_of_measures u ON m.uomId = u.id 
         WHERE m.quantity <= m.lowStockThreshold
-      `);
+      `;
+      console.log('Query:', query);
+      const [rows] = await pool.execute(query);
       console.log('Material.getLowStockItems query returned', rows.length, 'rows');
       return rows;
     } catch (error) {
       console.error('Error in Material.getLowStockItems:', error);
+      console.error('Error code:', error.code);
+      console.error('Error errno:', error.errno);
+      console.error('Error sqlState:', error.sqlState);
+      console.error('Error sqlMessage:', error.sqlMessage);
       throw error;
     }
   }
@@ -155,6 +185,10 @@ class Material {
       return result.affectedRows > 0;
     } catch (error) {
       console.error('Error in Material.delete:', error);
+      console.error('Error code:', error.code);
+      console.error('Error errno:', error.errno);
+      console.error('Error sqlState:', error.sqlState);
+      console.error('Error sqlMessage:', error.sqlMessage);
       throw error;
     }
   }
@@ -167,6 +201,10 @@ class Material {
       return result.affectedRows;
     } catch (error) {
       console.error('Error in Material.deleteAll:', error);
+      console.error('Error code:', error.code);
+      console.error('Error errno:', error.errno);
+      console.error('Error sqlState:', error.sqlState);
+      console.error('Error sqlMessage:', error.sqlMessage);
       throw error;
     }
   }
