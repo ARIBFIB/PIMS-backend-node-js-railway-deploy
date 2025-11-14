@@ -54,7 +54,29 @@ async function initDatabase() {
       );
     `);
 
-    // MATERIALS
+    // CATEGORIES (Create before materials that reference it)
+    await connection.query(`
+      CREATE TABLE IF NOT EXISTS categories (
+        id INT AUTO_INCREMENT PRIMARY KEY,
+        code VARCHAR(10) NOT NULL UNIQUE,
+        name VARCHAR(255) NOT NULL,
+        createdAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        updatedAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+      );
+    `);
+
+    // UNIT OF MEASURES (Create before materials that reference it)
+    await connection.query(`
+      CREATE TABLE IF NOT EXISTS unit_of_measures (
+        id INT AUTO_INCREMENT PRIMARY KEY,
+        name VARCHAR(255) NOT NULL,
+        symbol VARCHAR(50) NOT NULL,
+        createdAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        updatedAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+      );
+    `);
+
+    // MATERIALS (Now we can include the foreign key columns directly)
     await connection.query(`
       CREATE TABLE IF NOT EXISTS materials (
         id INT AUTO_INCREMENT PRIMARY KEY,
@@ -63,8 +85,12 @@ async function initDatabase() {
         quantity DECIMAL(10,2) NOT NULL DEFAULT 0,
         unitPrice DECIMAL(10,2) NOT NULL DEFAULT 0,
         lowStockThreshold DECIMAL(10,2) NOT NULL DEFAULT 0,
+        categoryId INT,
+        uomId INT,
         createdAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-        updatedAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+        updatedAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+        FOREIGN KEY (categoryId) REFERENCES categories(id),
+        FOREIGN KEY (uomId) REFERENCES unit_of_measures(id)
       );
     `);
 
@@ -74,8 +100,10 @@ async function initDatabase() {
         id INT AUTO_INCREMENT PRIMARY KEY,
         name VARCHAR(255) NOT NULL,
         category VARCHAR(100) NOT NULL,
+        categoryId INT,
         createdAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-        updatedAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+        updatedAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+        FOREIGN KEY (categoryId) REFERENCES categories(id)
       );
     `);
 
@@ -100,31 +128,13 @@ async function initDatabase() {
         materialCost DECIMAL(10,2) NOT NULL,
         additionalExpense DECIMAL(10,2) NOT NULL DEFAULT 0,
         totalCost DECIMAL(10,2) GENERATED ALWAYS AS (materialCost + additionalExpense) STORED,
+        customerId INT,
+        batchNumber VARCHAR(50),
+        status ENUM('PENDING', 'COMPLETED', 'CANCELLED') NOT NULL DEFAULT 'PENDING',
         createdAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
         updatedAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-        FOREIGN KEY (recipeId) REFERENCES recipes(id)
-      );
-    `);
-
-    // UNIT OF MEASURES
-    await connection.query(`
-      CREATE TABLE IF NOT EXISTS unit_of_measures (
-        id INT AUTO_INCREMENT PRIMARY KEY,
-        name VARCHAR(255) NOT NULL,
-        symbol VARCHAR(50) NOT NULL,
-        createdAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-        updatedAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
-      );
-    `);
-
-    // CATEGORIES
-    await connection.query(`
-      CREATE TABLE IF NOT EXISTS categories (
-        id INT AUTO_INCREMENT PRIMARY KEY,
-        code VARCHAR(10) NOT NULL UNIQUE,
-        name VARCHAR(255) NOT NULL,
-        createdAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-        updatedAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+        FOREIGN KEY (recipeId) REFERENCES recipes(id),
+        FOREIGN KEY (customerId) REFERENCES customers(id)
       );
     `);
 
@@ -185,79 +195,6 @@ async function initDatabase() {
       );
     `);
 
-    // ALTER MATERIALS TABLE - Check if columns exist before adding them
-    try {
-      const [materialColumns] = await connection.query(`SHOW COLUMNS FROM materials LIKE 'categoryId'`);
-      if (materialColumns.length === 0) {
-        await connection.query(`ALTER TABLE materials ADD COLUMN categoryId INT`);
-        await connection.query(`ALTER TABLE materials ADD FOREIGN KEY (categoryId) REFERENCES categories(id)`);
-      }
-    } catch (err) {
-      if (!err.message.includes('Duplicate column name') && !err.message.includes('already exists')) {
-        throw err;
-      }
-    }
-    
-    try {
-      const [uomColumns] = await connection.query(`SHOW COLUMNS FROM materials LIKE 'uomId'`);
-      if (uomColumns.length === 0) {
-        await connection.query(`ALTER TABLE materials ADD COLUMN uomId INT`);
-        await connection.query(`ALTER TABLE materials ADD FOREIGN KEY (uomId) REFERENCES unit_of_measures(id)`);
-      }
-    } catch (err) {
-      if (!err.message.includes('Duplicate column name') && !err.message.includes('already exists')) {
-        throw err;
-      }
-    }
-
-    // ALTER RECIPES TABLE - Check if column exists before adding it
-    try {
-      const [recipeColumns] = await connection.query(`SHOW COLUMNS FROM recipes LIKE 'categoryId'`);
-      if (recipeColumns.length === 0) {
-        await connection.query(`ALTER TABLE recipes ADD COLUMN categoryId INT`);
-        await connection.query(`ALTER TABLE recipes ADD FOREIGN KEY (categoryId) REFERENCES categories(id)`);
-      }
-    } catch (err) {
-      if (!err.message.includes('Duplicate column name') && !err.message.includes('already exists')) {
-        throw err;
-      }
-    }
-
-    // ALTER PRODUCTION_LOGS TABLE - Check if columns exist before adding them
-    try {
-      const [prodLogColumns1] = await connection.query(`SHOW COLUMNS FROM production_logs LIKE 'customerId'`);
-      if (prodLogColumns1.length === 0) {
-        await connection.query(`ALTER TABLE production_logs ADD COLUMN customerId INT`);
-        await connection.query(`ALTER TABLE production_logs ADD FOREIGN KEY (customerId) REFERENCES customers(id)`);
-      }
-    } catch (err) {
-      if (!err.message.includes('Duplicate column name') && !err.message.includes('already exists')) {
-        throw err;
-      }
-    }
-    
-    try {
-      const [prodLogColumns2] = await connection.query(`SHOW COLUMNS FROM production_logs LIKE 'batchNumber'`);
-      if (prodLogColumns2.length === 0) {
-        await connection.query(`ALTER TABLE production_logs ADD COLUMN batchNumber VARCHAR(50)`);
-      }
-    } catch (err) {
-      if (!err.message.includes('Duplicate column name') && !err.message.includes('already exists')) {
-        throw err;
-      }
-    }
-    
-    try {
-      const [prodLogColumns3] = await connection.query(`SHOW COLUMNS FROM production_logs LIKE 'status'`);
-      if (prodLogColumns3.length === 0) {
-        await connection.query(`ALTER TABLE production_logs ADD COLUMN status ENUM('PENDING', 'COMPLETED', 'CANCELLED') NOT NULL DEFAULT 'PENDING'`);
-      }
-    } catch (err) {
-      if (!err.message.includes('Duplicate column name') && !err.message.includes('already exists')) {
-        throw err;
-      }
-    }
-
     console.log("✅ All tables and relationships created successfully.");
 
     // Seed data
@@ -270,19 +207,38 @@ async function initDatabase() {
         ON DUPLICATE KEY UPDATE email = email;
       `);
 
+      // Insert default categories
       await connection.query(`
-        INSERT INTO materials (name, unit, quantity, unitPrice, lowStockThreshold) VALUES
-        ('Flour', 'kg', 200, 120, 50),
-        ('Sugar', 'kg', 100, 140, 30),
-        ('Salt', 'kg', 50, 20, 10),
-        ('Oil', 'l', 30, 150, 5),
-        ('Yeast', 'g', 500, 0.5, 100)
+        INSERT IGNORE INTO categories (code, name) VALUES 
+        ('001', 'Raw Materials'),
+        ('002', 'Packaging'),
+        ('003', 'Finished Goods');
+      `);
+
+      // Insert default unit of measures
+      await connection.query(`
+        INSERT IGNORE INTO unit_of_measures (name, symbol) VALUES 
+        ('Kilogram', 'kg'),
+        ('Gram', 'g'),
+        ('Liter', 'l'),
+        ('Milliliter', 'ml'),
+        ('Piece', 'pc'),
+        ('Box', 'box');
+      `);
+
+      await connection.query(`
+        INSERT INTO materials (name, unit, quantity, unitPrice, lowStockThreshold, categoryId, uomId) VALUES
+        ('Flour', 'kg', 200, 120, 50, (SELECT id FROM categories WHERE code = '001'), (SELECT id FROM unit_of_measures WHERE symbol = 'kg')),
+        ('Sugar', 'kg', 100, 140, 30, (SELECT id FROM categories WHERE code = '001'), (SELECT id FROM unit_of_measures WHERE symbol = 'kg')),
+        ('Salt', 'kg', 50, 20, 10, (SELECT id FROM categories WHERE code = '001'), (SELECT id FROM unit_of_measures WHERE symbol = 'kg')),
+        ('Oil', 'l', 30, 150, 5, (SELECT id FROM categories WHERE code = '001'), (SELECT id FROM unit_of_measures WHERE symbol = 'l')),
+        ('Yeast', 'g', 500, 0.5, 100, (SELECT id FROM categories WHERE code = '001'), (SELECT id FROM unit_of_measures WHERE symbol = 'g'))
         ON DUPLICATE KEY UPDATE name = name;
       `);
 
       await connection.query(`
-        INSERT INTO recipes (name, category)
-        VALUES ('Bread', 'Bakery')
+        INSERT INTO recipes (name, category, categoryId)
+        VALUES ('Bread', 'Bakery', (SELECT id FROM categories WHERE code = '003'))
         ON DUPLICATE KEY UPDATE name = name;
       `);
 

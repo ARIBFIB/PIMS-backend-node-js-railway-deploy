@@ -12,6 +12,7 @@ class Material {
       `);
       return rows;
     } catch (error) {
+      console.error('Error in Material.getAll:', error);
       throw error;
     }
   }
@@ -27,6 +28,7 @@ class Material {
       `, [id]);
       return rows[0] || null;
     } catch (error) {
+      console.error('Error in Material.findById:', error);
       throw error;
     }
   }
@@ -41,6 +43,7 @@ class Material {
       );
       return { id: result.insertId, ...materialData };
     } catch (error) {
+      console.error('Error in Material.create:', error);
       throw error;
     }
   }
@@ -95,6 +98,7 @@ class Material {
       );
       return { id, ...materialData };
     } catch (error) {
+      console.error('Error in Material.update:', error);
       throw error;
     }
   }
@@ -107,6 +111,7 @@ class Material {
       );
       return { id, quantity };
     } catch (error) {
+      console.error('Error in Material.updateQuantity:', error);
       throw error;
     }
   }
@@ -122,6 +127,7 @@ class Material {
       `);
       return rows;
     } catch (error) {
+      console.error('Error in Material.getLowStockItems:', error);
       throw error;
     }
   }
@@ -134,6 +140,17 @@ class Material {
       );
       return result.affectedRows > 0;
     } catch (error) {
+      console.error('Error in Material.delete:', error);
+      throw error;
+    }
+  }
+
+  static async deleteAll() {
+    try {
+      const [result] = await pool.execute('DELETE FROM materials');
+      return result.affectedRows;
+    } catch (error) {
+      console.error('Error in Material.deleteAll:', error);
       throw error;
     }
   }

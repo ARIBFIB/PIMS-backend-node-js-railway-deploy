@@ -3,11 +3,14 @@ const Material = require('../models/Material');
 const getAllMaterials = async (req, res) => {
   try {
     const materials = await Material.getAll();
-    console.log('Retrieved materials:', materials);
+    console.log('Retrieved materials:', materials.length);
     res.json(materials);
   } catch (error) {
     console.error('Get materials error:', error);
-    res.status(500).json({ message: 'Internal server error' });
+    res.status(500).json({ 
+      message: 'Internal server error',
+      error: process.env.NODE_ENV === 'development' ? error.message : undefined
+    });
   }
 };
 
@@ -24,7 +27,10 @@ const getMaterialById = async (req, res) => {
     res.json(material);
   } catch (error) {
     console.error('Get material error:', error);
-    res.status(500).json({ message: 'Internal server error' });
+    res.status(500).json({ 
+      message: 'Internal server error',
+      error: process.env.NODE_ENV === 'development' ? error.message : undefined
+    });
   }
 };
 
@@ -52,7 +58,10 @@ const createMaterial = async (req, res) => {
     res.status(201).json({ message: 'Material added successfully', material });
   } catch (error) {
     console.error('Create material error:', error);
-    res.status(500).json({ message: 'Internal server error' });
+    res.status(500).json({ 
+      message: 'Internal server error',
+      error: process.env.NODE_ENV === 'development' ? error.message : undefined
+    });
   }
 };
 
@@ -83,18 +92,24 @@ const updateMaterial = async (req, res) => {
     res.json({ message: 'Material updated successfully', material });
   } catch (error) {
     console.error('Update material error:', error);
-    res.status(500).json({ message: 'Internal server error' });
+    res.status(500).json({ 
+      message: 'Internal server error',
+      error: process.env.NODE_ENV === 'development' ? error.message : undefined
+    });
   }
 };
 
 const getLowStockItems = async (req, res) => {
   try {
     const materials = await Material.getLowStockItems();
-    console.log('Retrieved low stock items:', materials);
+    console.log('Retrieved low stock items:', materials.length);
     res.json(materials);
   } catch (error) {
     console.error('Get low stock items error:', error);
-    res.status(500).json({ message: 'Internal server error' });
+    res.status(500).json({ 
+      message: 'Internal server error',
+      error: process.env.NODE_ENV === 'development' ? error.message : undefined
+    });
   }
 };
 
@@ -117,7 +132,10 @@ const deleteMaterial = async (req, res) => {
     }
   } catch (error) {
     console.error('Delete material error:', error);
-    res.status(500).json({ message: 'Internal server error' });
+    res.status(500).json({ 
+      message: 'Internal server error',
+      error: process.env.NODE_ENV === 'development' ? error.message : undefined
+    });
   }
 };
 
@@ -133,7 +151,10 @@ const deleteAllMaterials = async (req, res) => {
     }
   } catch (error) {
     console.error('Delete all materials error:', error);
-    res.status(500).json({ message: 'Internal server error' });
+    res.status(500).json({ 
+      message: 'Internal server error',
+      error: process.env.NODE_ENV === 'development' ? error.message : undefined
+    });
   }
 };
 
