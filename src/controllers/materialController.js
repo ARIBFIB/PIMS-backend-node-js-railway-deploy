@@ -31,25 +31,20 @@ const getMaterialById = async (req, res) => {
 const createMaterial = async (req, res) => {
   try {
     console.log('Received data for create:', req.body);
-    const { name, unit, quantity, unitPrice, lowStockThreshold, categoryId, uomId } = req.body;
-
-    // Required: name, categoryId, uomId, lowStockThreshold
-    if (!name || !categoryId || !uomId || lowStockThreshold === undefined) {
-      return res.status(400).json({
-        message: 'Name, Category, Unit of Measure and Low Stock Threshold are required'
-      });
+    const { name, categoryId, uomId, lowStockThreshold } = req.body;
+    
+    // Validate input
+    if (!name || lowStockThreshold === undefined) {
+      return res.status(400).json({ message: 'Name and Low Stock Threshold are required' });
     }
-
+    
     const material = await Material.create({
-      name,
-      unit: unit || null,
-      quantity: quantity !== undefined ? parseFloat(quantity) : null,
-      unitPrice: unitPrice !== undefined ? parseFloat(unitPrice) : null,
-      lowStockThreshold: parseFloat(lowStockThreshold),
-      categoryId,
-      uomId
-    });
-
+      name, unit, quantity, unitPrice,
+    lowStockThreshold: parseFloat(lowStockThreshold),
+    categoryId: categoryId || null,
+    uomId: uomId || null
+  });
+    
     console.log('Created material:', material);
     res.status(201).json({ message: 'Material added successfully', material });
   } catch (error) {
@@ -58,19 +53,15 @@ const createMaterial = async (req, res) => {
   }
 };
 
-
 const updateMaterial = async (req, res) => {
   try {
     console.log('Received data for update:', req.body);
     const { id } = req.params;
-    const { name, unit, quantity, unitPrice, lowStockThreshold, categoryId, uomId } = req.body;
+    const { name, categoryId, uomId, lowStockThreshold } = req.body;
     
     // Build update object with only provided fields
     const updateData = {};
     if (name !== undefined) updateData.name = name;
-    if (unit !== undefined) updateData.unit = unit;
-    if (quantity !== undefined) updateData.quantity = parseFloat(quantity);
-    if (unitPrice !== undefined) updateData.unitPrice = parseFloat(unitPrice);
     if (lowStockThreshold !== undefined) updateData.lowStockThreshold = parseFloat(lowStockThreshold);
     if (categoryId !== undefined) updateData.categoryId = categoryId;
     if (uomId !== undefined) updateData.uomId = uomId;
