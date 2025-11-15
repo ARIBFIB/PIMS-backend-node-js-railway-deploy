@@ -144,13 +144,27 @@ class Material {
 
   static async updateQuantity(id, quantity) {
     try {
-      console.log('Executing Material.updateQuantity for ID:', id, 'with quantity:', quantity);
+      // Validate and sanitize the quantity value
+      let sanitizedQuantity;
+      if (typeof quantity === 'string') {
+        // Remove any non-numeric characters except decimal point and minus sign
+        sanitizedQuantity = parseFloat(quantity.replace(/[^0-9.-]+/g, ''));
+      } else {
+        sanitizedQuantity = Number(quantity);
+      }
+      
+      // Check if the sanitized quantity is a valid number
+      if (isNaN(sanitizedQuantity)) {
+        throw new Error(`Invalid quantity value: ${quantity}`);
+      }
+      
+      console.log('Executing Material.updateQuantity for ID:', id, 'with quantity:', sanitizedQuantity);
       await pool.execute(
         'UPDATE materials SET quantity = ? WHERE id = ?',
-        [quantity, id]
+        [sanitizedQuantity, id]
       );
       console.log('Material.updateQuantity completed for ID:', id);
-      return { id, quantity };
+      return { id, quantity: sanitizedQuantity };
     } catch (error) {
       console.error('Error in Material.updateQuantity:', error);
       console.error('Error code:', error.code);

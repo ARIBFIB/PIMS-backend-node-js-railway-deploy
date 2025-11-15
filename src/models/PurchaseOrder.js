@@ -157,7 +157,21 @@ class PurchaseOrder {
         if (!material) {
           throw new Error(`Material with ID ${item.materialId} not found`);
         }
-        const newQuantity = material.quantity + item.quantity;
+        // Ensure quantities are properly parsed as numbers to avoid malformed decimal values
+        const materialQuantity = typeof material.quantity === 'string' 
+          ? parseFloat(material.quantity.replace(/[^0-9.-]+/g, '')) 
+          : Number(material.quantity);
+          
+        const itemQuantity = typeof item.quantity === 'string' 
+          ? parseFloat(item.quantity.replace(/[^0-9.-]+/g, '')) 
+          : Number(item.quantity);
+        
+        // Validate that parsed quantities are valid numbers
+        if (isNaN(materialQuantity) || isNaN(itemQuantity)) {
+          throw new Error(`Invalid quantity value for material ID ${item.materialId}: material.quantity=${material.quantity}, item.quantity=${item.quantity}`);
+        }
+        
+        const newQuantity = materialQuantity + itemQuantity;
         await Material.updateQuantity(item.materialId, newQuantity);
       }
       
