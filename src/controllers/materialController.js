@@ -39,7 +39,7 @@ const createMaterial = async (req, res) => {
     
     const material = await Material.create({
       name,
-      unit,
+      unit: unit || null,
       quantity: quantity !== undefined ? parseFloat(quantity) : 0, // Default to 0 if not provided
       lowStockThreshold: parseFloat(lowStockThreshold),
       categoryId,
