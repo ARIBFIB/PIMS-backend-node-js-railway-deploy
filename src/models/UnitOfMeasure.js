@@ -61,6 +61,30 @@ class UnitOfMeasure {
       throw error;
     }
   }
+  
+  static async deleteAll() {
+    const connection = await pool.getConnection();
+    
+    try {
+      await connection.beginTransaction();
+      
+      // Delete related records first to avoid foreign key constraint violations
+      await connection.execute('DELETE FROM recipe_ingredients WHERE uomId IS NOT NULL');
+      await connection.execute('DELETE FROM purchase_order_items WHERE uomId IS NOT NULL');
+      await connection.execute('DELETE FROM materials WHERE uomId IS NOT NULL');
+      
+      // Now delete all unit_of_measures
+      const [result] = await connection.execute('DELETE FROM unit_of_measures');
+      
+      await connection.commit();
+      return result.affectedRows;
+    } catch (error) {
+      await connection.rollback();
+      throw error;
+    } finally {
+      connection.release();
+    }
+  }
 }
 
 module.exports = UnitOfMeasure;

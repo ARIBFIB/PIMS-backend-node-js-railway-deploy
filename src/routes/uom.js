@@ -16,5 +16,6 @@ router.put('/:id', authenticate, [
   body('symbol').notEmpty().withMessage('UOM symbol is required')
 ], uomController.updateUOM);
 router.delete('/:id', authenticate, uomController.deleteUOM);
+router.delete('/', authenticate, uomController.deleteAllUOMs);
 
 module.exports = router;

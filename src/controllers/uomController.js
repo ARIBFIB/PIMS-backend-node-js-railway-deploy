@@ -92,10 +92,23 @@ const deleteUOM = async (req, res) => {
   }
 };
 
+const deleteAllUOMs = async (req, res) => {
+  try {
+    // Delete all UOMs
+    const deleted = await UnitOfMeasure.deleteAll();
+    
+    res.json({ message: `All Unit of Measures deleted successfully. ${deleted} UOMs removed.` });
+  } catch (error) {
+    console.error('Delete all UOMs error:', error);
+    res.status(500).json({ message: 'Internal server error' });
+  }
+};
+
 module.exports = {
   getAllUOMs,
   getUOMById,
   createUOM,
   updateUOM,
-  deleteUOM
+  deleteUOM,
+  deleteAllUOMs
 };
