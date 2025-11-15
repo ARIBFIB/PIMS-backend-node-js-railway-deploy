@@ -11,12 +11,12 @@ router.get('/:id', authenticate, materialController.getMaterialById);
 router.post('/', authenticate, [
   body('name').notEmpty().withMessage('Material name is required'),
   body('unit').notEmpty().withMessage('Unit is required'),
-  body('quantity').isNumeric().withMessage('Quantity must be a number'),
+  // body('quantity').isNumeric().withMessage('Quantity must be a number'),
   // body('unitPrice').isNumeric().withMessage('Unit price must be a number'),
   body('lowStockThreshold').isNumeric().withMessage('Low stock threshold must be a number')
 ], materialController.createMaterial);
 router.put('/:id', authenticate, [
-  body('quantity').isNumeric().withMessage('Quantity must be a number'),
+  // body('quantity').isNumeric().withMessage('Quantity must be a number'),
   // body('unitPrice').isNumeric().withMessage('Unit price must be a number'),
   body('lowStockThreshold').isNumeric().withMessage('Low stock threshold must be a number')
 ], materialController.updateMaterial);
