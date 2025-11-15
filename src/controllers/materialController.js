@@ -33,19 +33,19 @@ const createMaterial = async (req, res) => {
     console.log('Received data for create:', req.body);
     const { name, unit, quantity, unitPrice, lowStockThreshold, categoryId, uomId } = req.body;
 
-    // Required fields should ONLY be these:
+    // Only required fields
     if (!name || quantity === undefined || unitPrice === undefined || lowStockThreshold === undefined) {
       return res.status(400).json({ message: 'Name, quantity, unitPrice and lowStockThreshold are required' });
     }
 
     const material = await Material.create({
       name,
-      unit: unit || null, // allow null
+      unit: unit || null,               // optional
       quantity: parseFloat(quantity),
       unitPrice: parseFloat(unitPrice),
       lowStockThreshold: parseFloat(lowStockThreshold),
-      categoryId: categoryId || null, // allow null
-      uomId: uomId || null // allow null
+      categoryId: categoryId || null,   // optional
+      uomId: uomId || null              // optional
     });
 
     console.log('Created material:', material);
