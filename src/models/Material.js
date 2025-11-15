@@ -3,7 +3,6 @@ const pool = require('../config/dbPool');
 class Material {
   static async getAll() {
     try {
-      console.log('Executing Material.getAll query...');
       const query = `
         SELECT m.*, c.name as categoryName, u.name as uomName, u.symbol as uomSymbol 
         FROM materials m 
@@ -11,7 +10,7 @@ class Material {
         LEFT JOIN unit_of_measures u ON m.uomId = u.id 
         ORDER BY m.name
       `;
-      console.log('Query:', query);
+      console.log('Executing Material.getAll query:', query);
       const [rows] = await pool.execute(query);
       console.log('Material.getAll query returned', rows.length, 'rows');
       return rows;
@@ -21,39 +20,19 @@ class Material {
       console.error('Error errno:', error.errno);
       console.error('Error sqlState:', error.sqlState);
       console.error('Error sqlMessage:', error.sqlMessage);
-      
-      // Try a simpler query as fallback
-      try {
-        console.log('Trying fallback query without joins...');
-        const [rows] = await pool.execute('SELECT * FROM materials ORDER BY name');
-        console.log('Fallback query returned', rows.length, 'rows');
-        return rows.map(row => ({
-          ...row,
-          categoryName: null,
-          uomName: null,
-          uomSymbol: null
-        }));
-      } catch (fallbackError) {
-        console.error('Fallback query also failed:', fallbackError);
-        throw fallbackError;
-      }
+      throw error;
     }
   }
 
   static async findById(id) {
     try {
-      console.log('Executing Material.findById query for ID:', id);
-      const query = `
-        SELECT m.*, c.name as categoryName, u.name as uomName, u.symbol as uomSymbol 
-        FROM materials m 
-        LEFT JOIN categories c ON m.categoryId = c.id 
-        LEFT JOIN unit_of_measures u ON m.uomId = u.id 
-        WHERE m.id = ?
-      `;
-      console.log('Query:', query);
-      const [rows] = await pool.execute(query, [id]);
+      console.log('Executing Material.findById for ID:', id);
+      const [rows] = await pool.execute(
+        'SELECT m.*, c.name as categoryName, u.name as uomName, u.symbol as uomSymbol FROM materials m LEFT JOIN categories c ON m.categoryId = c.id LEFT JOIN unit_of_measures u ON m.uomId = u.id WHERE m.id = ?',
+        [id]
+      );
       console.log('Material.findById query returned', rows.length, 'rows');
-      return rows[0] || null;
+      return rows.length > 0 ? rows[0] : null;
     } catch (error) {
       console.error('Error in Material.findById:', error);
       console.error('Error code:', error.code);
@@ -65,13 +44,12 @@ class Material {
   }
 
   static async create(materialData) {
-    const { name, unit, categoryId, uomId, quantity, lowStockThreshold } = materialData;
-    
+    const { name, unit, categoryId, uomId, quantity, lowStockThreshold, itemCode } = materialData;
     try {
       console.log('Executing Material.create with data:', materialData);
       const [result] = await pool.execute(
-        'INSERT INTO materials (name, unit, categoryId, uomId, quantity, lowStockThreshold) VALUES (?, ?, ?, ?, ?, ?)',
-        [name, unit, categoryId || null, uomId || null, quantity, lowStockThreshold]
+        'INSERT INTO materials (itemCode, name, unit, categoryId, uomId, quantity, lowStockThreshold) VALUES (?, ?, ?, ?, ?, ?, ?)',
+        [itemCode || null, name, unit, categoryId || null, uomId || null, quantity, lowStockThreshold]
       );
       console.log('Material.create inserted with ID:', result.insertId);
       return { id: result.insertId, ...materialData };
@@ -86,11 +64,16 @@ class Material {
   }
 
   static async update(id, materialData) {
-    const { name, unit, categoryId, uomId, quantity, lowStockThreshold } = materialData;
+    const { name, unit, categoryId, uomId, quantity, lowStockThreshold, itemCode } = materialData;
     
     // Build dynamic query based on provided fields
     const fields = [];
     const values = [];
+    
+    if (itemCode !== undefined) {
+      fields.push('itemCode = ?');
+      values.push(itemCode || null);
+    }
     
     if (name !== undefined) {
       fields.push('name = ?');
