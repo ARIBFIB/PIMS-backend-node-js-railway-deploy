@@ -32,22 +32,22 @@ const createMaterial = async (req, res) => {
   try {
     console.log('Received data for create:', req.body);
     const { name, unit, quantity, unitPrice, lowStockThreshold, categoryId, uomId } = req.body;
-    
-    // Validate input
-    if (!name || !unit || quantity === undefined || unitPrice === undefined || lowStockThreshold === undefined) {
-      return res.status(400).json({ message: 'All fields are required' });
+
+    // Required fields should ONLY be these:
+    if (!name || quantity === undefined || unitPrice === undefined || lowStockThreshold === undefined) {
+      return res.status(400).json({ message: 'Name, quantity, unitPrice and lowStockThreshold are required' });
     }
-    
+
     const material = await Material.create({
       name,
-      unit,
+      unit: unit || null, // allow null
       quantity: parseFloat(quantity),
       unitPrice: parseFloat(unitPrice),
       lowStockThreshold: parseFloat(lowStockThreshold),
-      categoryId,
-      uomId
+      categoryId: categoryId || null, // allow null
+      uomId: uomId || null // allow null
     });
-    
+
     console.log('Created material:', material);
     res.status(201).json({ message: 'Material added successfully', material });
   } catch (error) {
@@ -55,6 +55,7 @@ const createMaterial = async (req, res) => {
     res.status(500).json({ message: 'Internal server error' });
   }
 };
+
 
 const updateMaterial = async (req, res) => {
   try {
