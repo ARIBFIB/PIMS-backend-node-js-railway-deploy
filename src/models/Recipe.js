@@ -250,10 +250,28 @@ class Recipe {
       let maxQuantity = Infinity;
       let limitingFactors = [];
       
+      // Handle case where there are no ingredients
+      if (ingredientRows.length === 0) {
+        return {
+          recipeName: recipe.name,
+          maxQuantity: 0,
+          limitingFactors: [],
+          belowThresholdMaterials: []
+        };
+      }
+      
+      // For each ingredient, calculate how many units of the recipe can be produced
       for (const ingredient of ingredientRows) {
-        // Calculate maximum quantity based on this ingredient
+        // Skip ingredients with zero quantity requirement (shouldn't happen but just in case)
+        if (ingredient.quantity <= 0) {
+          continue;
+        }
+        
+        // Calculate maximum producible units based on this ingredient
+        // Formula: availableQuantity / quantityPerUnit
         const maxFromThisIngredient = Math.floor(ingredient.availableQuantity / ingredient.quantity);
         
+        // Update the overall maximum if this ingredient is more limiting
         if (maxFromThisIngredient < maxQuantity) {
           maxQuantity = maxFromThisIngredient;
           limitingFactors = [{
@@ -263,6 +281,7 @@ class Recipe {
             maxProducible: maxFromThisIngredient
           }];
         } else if (maxFromThisIngredient === maxQuantity) {
+          // Add to limiting factors if it's equally limiting
           limitingFactors.push({
             materialName: ingredient.name,
             available: ingredient.availableQuantity,
@@ -272,17 +291,20 @@ class Recipe {
         }
       }
       
-      // If no ingredients, set max to 0
-      if (ingredientRows.length === 0) {
+      // If no valid ingredients with positive quantities, set max to 0
+      if (maxQuantity === Infinity) {
         maxQuantity = 0;
       }
       
-      // Check which materials would go below threshold
+      // Check which materials would go below threshold after producing max quantity
       const belowThresholdMaterials = [];
       for (const ingredient of ingredientRows) {
+        // Calculate how much of this material will be used
         const requiredQuantity = ingredient.quantity * maxQuantity;
+        // Calculate how much will remain after production
         const remainingQuantity = ingredient.availableQuantity - requiredQuantity;
         
+        // Check if remaining quantity would be below threshold
         if (remainingQuantity < ingredient.lowStockThreshold) {
           belowThresholdMaterials.push({
             name: ingredient.name,
@@ -296,7 +318,7 @@ class Recipe {
       
       return {
         recipeName: recipe.name,
-        maxQuantity: maxQuantity === Infinity ? 0 : maxQuantity,
+        maxQuantity: maxQuantity,
         limitingFactors,
         belowThresholdMaterials
       };
