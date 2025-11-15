@@ -30,17 +30,19 @@ const getMaterialById = async (req, res) => {
 
 const createMaterial = async (req, res) => {
   try {
-    const { name, unit, quantity, lowStockThreshold, categoryId, uomId } = req.body;
+    console.log('Received data for create:', req.body);
+    const { name, unit, quantity, unitPrice, lowStockThreshold, categoryId, uomId } = req.body;
     
-    // Validate input - quantity is optional for new materials, defaults to 0
-    if (!name || lowStockThreshold === undefined) {
-      return res.status(400).json({ message: 'Name and low stock threshold are required' });
+    // Validate input
+    if (!name || !unit || quantity === undefined || unitPrice === undefined || lowStockThreshold === undefined) {
+      return res.status(400).json({ message: 'All fields are required' });
     }
     
     const material = await Material.create({
       name,
-      unit: unit || null,
-      quantity: quantity !== undefined ? parseFloat(quantity) : 0, // Default to 0 if not provided
+      unit,
+      quantity: parseFloat(quantity),
+      unitPrice: parseFloat(unitPrice),
       lowStockThreshold: parseFloat(lowStockThreshold),
       categoryId,
       uomId
@@ -58,13 +60,14 @@ const updateMaterial = async (req, res) => {
   try {
     console.log('Received data for update:', req.body);
     const { id } = req.params;
-    const { name, unit, quantity, lowStockThreshold, categoryId, uomId } = req.body;
+    const { name, unit, quantity, unitPrice, lowStockThreshold, categoryId, uomId } = req.body;
     
     // Build update object with only provided fields
     const updateData = {};
     if (name !== undefined) updateData.name = name;
     if (unit !== undefined) updateData.unit = unit;
     if (quantity !== undefined) updateData.quantity = parseFloat(quantity);
+    if (unitPrice !== undefined) updateData.unitPrice = parseFloat(unitPrice);
     if (lowStockThreshold !== undefined) updateData.lowStockThreshold = parseFloat(lowStockThreshold);
     if (categoryId !== undefined) updateData.categoryId = categoryId;
     if (uomId !== undefined) updateData.uomId = uomId;
