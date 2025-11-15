@@ -49,7 +49,7 @@ class Material {
       console.log('Executing Material.create with data:', materialData);
       const [result] = await pool.execute(
         'INSERT INTO materials (name, unit, categoryId, uomId, quantity, lowStockThreshold) VALUES (?, ?, ?, ?, ?, ?)',
-        [name, unit || null, categoryId || null, uomId || null, quantity || 0, lowStockThreshold]
+        [name, unit || 'N/A', categoryId || null, uomId || null, quantity || 0, lowStockThreshold]
       );
       console.log('Material.create inserted with ID:', result.insertId);
       return { id: result.insertId, ...materialData };
