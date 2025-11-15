@@ -1,5 +1,4 @@
-const pool = require('../config/database');
-const Material = require('./Material');
+const pool = require('../config/dbPool'); // Instead of databaseconst Material = require('./Material');
 
 class PurchaseOrder {
   static async getAll() {

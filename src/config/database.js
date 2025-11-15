@@ -10,8 +10,6 @@ const dbConfig = {
   database: process.env.MYSQLDATABASE || process.env.DB_NAME || "admin_pims",
   multipleStatements: true,
   connectTimeout: 20000,
-  acquireTimeout: 60000,
-  timeout: 60000,
   charset: 'utf8mb4'
 };
 
@@ -31,7 +29,7 @@ async function initDatabase() {
     console.log("✅ Connected to MySQL");
 
     // Create database if not exists (only for local development)
-    // For Railway, the database is already provided
+    // For Railway, database is already provided
     if (!process.env.MYSQLDATABASE) {
       await connection.query(`CREATE DATABASE IF NOT EXISTS admin_pims;`);
       await connection.query(`USE admin_pims;`);
@@ -141,6 +139,8 @@ async function initDatabase() {
       );
     `);
 
+
+
     // SUPPLIERS
     await connection.query(`
       CREATE TABLE IF NOT EXISTS suppliers (
@@ -236,17 +236,18 @@ async function initDatabase() {
 
       await connection.query(`
         INSERT INTO materials (name, unit, quantity, unitPrice, lowStockThreshold, categoryId, uomId) VALUES
-        ('Flour', 'kg', 200, 120, 50, (SELECT id FROM categories WHERE code = '001'), (SELECT id FROM unit_of_measures WHERE symbol = 'kg')),
-        ('Sugar', 'kg', 100, 140, 30, (SELECT id FROM categories WHERE code = '001'), (SELECT id FROM unit_of_measures WHERE symbol = 'kg')),
-        ('Salt', 'kg', 50, 20, 10, (SELECT id FROM categories WHERE code = '001'), (SELECT id FROM unit_of_measures WHERE symbol = 'kg')),
-        ('Oil', 'l', 30, 150, 5, (SELECT id FROM categories WHERE code = '001'), (SELECT id FROM unit_of_measures WHERE symbol = 'l')),
-        ('Yeast', 'g', 500, 0.5, 100, (SELECT id FROM categories WHERE code = '001'), (SELECT id FROM unit_of_measures WHERE symbol = 'g'))
+        ('Flour', 'kg', 200, 120, 50, (SELECT id FROM categories WHERE code = '001' LIMIT 1), (SELECT id FROM unit_of_measures WHERE symbol = 'kg' LIMIT 1)),
+        ('Sugar', 'kg', 100, 140, 30, (SELECT id FROM categories WHERE code = '001' LIMIT 1), (SELECT id FROM unit_of_measures WHERE symbol = 'kg' LIMIT 1)),
+        ('Salt', 'kg', 50, 20, 10, (SELECT id FROM categories WHERE code = '001' LIMIT 1), (SELECT id FROM unit_of_measures WHERE symbol = 'kg' LIMIT 1)),
+        ('Oil', 'l', 30, 150, 5, (SELECT id FROM categories WHERE code = '001' LIMIT 1), (SELECT id FROM unit_of_measures WHERE symbol = 'l' LIMIT 1)),
+        ('Yeast', 'g', 500, 0.5, 100, (SELECT id FROM categories WHERE code = '001' LIMIT 1), (SELECT id FROM unit_of_measures WHERE symbol = 'g' LIMIT 1))
+        ON DUPLICATE KEY UPDATE name = name;
         ON DUPLICATE KEY UPDATE name = name;
       `);
 
       await connection.query(`
         INSERT INTO recipes (name, category, categoryId)
-        VALUES ('Bread', 'Bakery', (SELECT id FROM categories WHERE code = '003'))
+        VALUES ('Bread', 'Bakery', (SELECT id FROM categories WHERE code = '003' LIMIT 1))
         ON DUPLICATE KEY UPDATE name = name;
       `);
 
@@ -255,15 +256,15 @@ async function initDatabase() {
 
       if (recipeId) {
         await connection.query(`
-          INSERT INTO recipe_ingredients (recipeId, materialId, quantity)
-          VALUES
-          (${recipeId}, (SELECT id FROM materials WHERE name='Flour' LIMIT 1), 1),
-          (${recipeId}, (SELECT id FROM materials WHERE name='Sugar' LIMIT 1), 0.1),
-          (${recipeId}, (SELECT id FROM materials WHERE name='Salt' LIMIT 1), 0.02),
-          (${recipeId}, (SELECT id FROM materials WHERE name='Oil' LIMIT 1), 0.1),
-          (${recipeId}, (SELECT id FROM materials WHERE name='Yeast' LIMIT 1), 10)
-          ON DUPLICATE KEY UPDATE recipeId = recipeId;
-        `);
+        INSERT INTO recipe_ingredients (recipeId, materialId, quantity)
+        VALUES
+        (${recipeId}, (SELECT id FROM materials WHERE name='Flour' LIMIT 1), 1),
+        (${recipeId}, (SELECT id FROM materials WHERE name='Sugar' LIMIT 1), 0.1),
+        (${recipeId}, (SELECT id FROM materials WHERE name='Salt' LIMIT 1), 0.02),
+        (${recipeId}, (SELECT id FROM materials WHERE name='Oil' LIMIT 1), 0.1),
+        (${recipeId}, (SELECT id FROM materials WHERE name='Yeast' LIMIT 1), 10)
+        ON DUPLICATE KEY UPDATE recipeId = recipeId;
+      `);
       }
 
       console.log("✅ Sample data inserted successfully!");

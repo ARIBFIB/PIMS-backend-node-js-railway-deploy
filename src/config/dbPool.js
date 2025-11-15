@@ -10,10 +10,6 @@ const dbConfig = {
   waitForConnections: true,
   connectionLimit: 10,
   queueLimit: 0,
-  // Add these options for better Railway compatibility
-  acquireTimeout: 60000,
-  timeout: 60000,
-  reconnect: true,
   charset: 'utf8mb4'
 };
 

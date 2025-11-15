@@ -1,4 +1,5 @@
-const pool = require('../config/database');
+// const pool = require('../config/database');
+const pool = require('../config/dbPool'); // Instead of database
 
 class Customer {
   static async getAll() {
