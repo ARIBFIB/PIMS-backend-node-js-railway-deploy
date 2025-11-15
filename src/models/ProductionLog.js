@@ -28,6 +28,7 @@ class ProductionLog {
   }
 
   static async create(logData) {
+    // Extract the date field but don't use it since the database auto-generates createdAt
     const { date, batchNumber, recipeId, customerId, quantityProduced, additionalExpense = 0 } = logData;
     const connection = await pool.getConnection();
     
@@ -60,11 +61,10 @@ class ProductionLog {
         await Material.updateQuantity(material.id, newQuantity);
       }
       
-      // Create production log (removed the 'date' field since it doesn't exist in the table)
-      const totalCost = calculation.estimatedCost + parseFloat(additionalExpense);
+      // Create production log (removed totalCost since it's a generated column)
       const [result] = await connection.execute(
-        'INSERT INTO production_logs (recipeId, customerId, batchNumber, quantityProduced, materialCost, additionalExpense, totalCost) VALUES (?, ?, ?, ?, ?, ?, ?)',
-        [recipeId, customerId || null, finalBatchNumber, quantityProduced, calculation.estimatedCost, additionalExpense, totalCost]
+        'INSERT INTO production_logs (recipeId, customerId, batchNumber, quantityProduced, materialCost, additionalExpense) VALUES (?, ?, ?, ?, ?, ?)',
+        [recipeId, customerId || null, finalBatchNumber, quantityProduced, calculation.estimatedCost, additionalExpense]
       );
       
       await connection.commit();
@@ -75,8 +75,7 @@ class ProductionLog {
         batchNumber: finalBatchNumber,
         quantityProduced,
         materialCost: calculation.estimatedCost,
-        additionalExpense,
-        totalCost
+        additionalExpense
       };
     } catch (error) {
       await connection.rollback();
