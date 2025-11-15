@@ -60,25 +60,23 @@ class ProductionLog {
         await Material.updateQuantity(material.id, newQuantity);
       }
       
-      // Create production log
+      // Create production log (removed the 'date' field since it doesn't exist in the table)
       const totalCost = calculation.estimatedCost + parseFloat(additionalExpense);
       const [result] = await connection.execute(
-        'INSERT INTO production_logs (date, recipeId, customerId, batchNumber, quantityProduced, materialCost, additionalExpense, totalCost, status) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)',
-        [date || new Date().toISOString().split('T')[0], recipeId, customerId || null, finalBatchNumber, quantityProduced, calculation.estimatedCost, additionalExpense, totalCost, 'COMPLETED']
+        'INSERT INTO production_logs (recipeId, customerId, batchNumber, quantityProduced, materialCost, additionalExpense, totalCost) VALUES (?, ?, ?, ?, ?, ?, ?)',
+        [recipeId, customerId || null, finalBatchNumber, quantityProduced, calculation.estimatedCost, additionalExpense, totalCost]
       );
       
       await connection.commit();
       return {
         id: result.insertId,
-        date,
         recipeId,
         customerId,
         batchNumber: finalBatchNumber,
         quantityProduced,
         materialCost: calculation.estimatedCost,
         additionalExpense,
-        totalCost,
-        status: 'COMPLETED'
+        totalCost
       };
     } catch (error) {
       await connection.rollback();
@@ -106,10 +104,6 @@ class ProductionLog {
       
       const log = logRows[0];
       
-      if (log.status !== 'PENDING') {
-        throw new Error('Only pending production logs can be approved');
-      }
-      
       // Calculate materials needed
       const calculation = await Recipe.calculateMaterials(log.recipeId, log.quantityProduced);
       
@@ -136,14 +130,14 @@ class ProductionLog {
         await Material.updateQuantity(material.id, newQuantity);
       }
       
-      // Update production log status
+      // Update production log with batch number (status is not a column in the table)
       await connection.execute(
-        'UPDATE production_logs SET status = ?, batchNumber = ? WHERE id = ?',
-        ['COMPLETED', batchNumber, id]
+        'UPDATE production_logs SET batchNumber = ? WHERE id = ?',
+        [batchNumber, id]
       );
       
       await connection.commit();
-      return { id, status: 'COMPLETED', batchNumber };
+      return { id, batchNumber };
     } catch (error) {
       await connection.rollback();
       throw error;
