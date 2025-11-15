@@ -30,7 +30,7 @@ const getMaterialById = async (req, res) => {
 
 const createMaterial = async (req, res) => {
   try {
-    const { name, unit, quantity, lowStockThreshold, categoryId, uomId, itemCode } = req.body;
+    const { name, unit, quantity, lowStockThreshold, categoryId, uomId } = req.body;
     
     // Validate input - quantity is optional for new materials, defaults to 0
     if (!name || lowStockThreshold === undefined) {
@@ -40,7 +40,6 @@ const createMaterial = async (req, res) => {
     const material = await Material.create({
       name,
       unit,
-      itemCode: itemCode || null,
       quantity: quantity !== undefined ? parseFloat(quantity) : 0, // Default to 0 if not provided
       lowStockThreshold: parseFloat(lowStockThreshold),
       categoryId,
@@ -59,7 +58,7 @@ const updateMaterial = async (req, res) => {
   try {
     console.log('Received data for update:', req.body);
     const { id } = req.params;
-    const { name, unit, quantity, lowStockThreshold, categoryId, uomId, itemCode } = req.body;
+    const { name, unit, quantity, lowStockThreshold, categoryId, uomId } = req.body;
     
     // Build update object with only provided fields
     const updateData = {};
@@ -69,7 +68,6 @@ const updateMaterial = async (req, res) => {
     if (lowStockThreshold !== undefined) updateData.lowStockThreshold = parseFloat(lowStockThreshold);
     if (categoryId !== undefined) updateData.categoryId = categoryId;
     if (uomId !== undefined) updateData.uomId = uomId;
-    if (itemCode !== undefined) updateData.itemCode = itemCode;
     
     // Validate that at least one field is provided
     if (Object.keys(updateData).length === 0) {

@@ -48,8 +48,8 @@ class Material {
     try {
       console.log('Executing Material.create with data:', materialData);
       const [result] = await pool.execute(
-        'INSERT INTO materials (itemCode, name, unit, categoryId, uomId, quantity, lowStockThreshold) VALUES (?, ?, ?, ?, ?, ?, ?)',
-        [itemCode || null, name, unit || null, categoryId || null, uomId || null, quantity, lowStockThreshold]
+        'INSERT INTO materials (name, unit, categoryId, uomId, quantity, lowStockThreshold) VALUES (?, ?, ?, ?, ?, ?)',
+        [name, unit || null, categoryId || null, uomId || null, quantity, lowStockThreshold]
       );
       console.log('Material.create inserted with ID:', result.insertId);
       return { id: result.insertId, ...materialData };
@@ -64,16 +64,11 @@ class Material {
   }
 
   static async update(id, materialData) {
-    const { name, unit, categoryId, uomId, quantity, lowStockThreshold, itemCode } = materialData;
+    const { name, unit, categoryId, uomId, quantity, lowStockThreshold } = materialData;
     
     // Build dynamic query based on provided fields
     const fields = [];
     const values = [];
-    
-    if (itemCode !== undefined) {
-      fields.push('itemCode = ?');
-      values.push(itemCode || null);
-    }
     
     if (name !== undefined) {
       fields.push('name = ?');
