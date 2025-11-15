@@ -63,13 +63,22 @@ app.use((req, res, next) => {
   next();
 });
 
-// Rate limiting with proper configuration for proxy
+// Rate limiting with more appropriate configuration for a dashboard application
 const limiter = rateLimit({
   windowMs: 15 * 60 * 1000, // 15 minutes
-  max: 100, // limit each IP to 100 requests per windowMs
+  max: 500, // Increased limit to 500 requests per windowMs to accommodate dashboard data fetching
   message: 'Too many requests from this IP, please try again later.',
   standardHeaders: true, // Return rate limit info in the `RateLimit-*` headers
   legacyHeaders: false, // Disable the `X-RateLimit-*` headers
+});
+
+// Separate rate limiter for auth endpoints (login, register, etc.) to prevent abuse
+const authLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minutes
+  max: 20, // More restrictive limit for auth endpoints
+  message: 'Too many authentication attempts, please try again later.',
+  standardHeaders: true,
+  legacyHeaders: false,
 });
 
 // Middlewares
@@ -80,7 +89,7 @@ app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
 // Routes
-app.use('/api/auth', authRoutes);
+app.use('/api/auth', authLimiter, authRoutes); // Apply stricter rate limiting to auth routes
 app.use('/api/materials', materialRoutes);
 app.use('/api/recipes', recipeRoutes);
 
