@@ -1,299 +1,303 @@
-// Script to initialize the admin_pims database and tables
+// db.js — FINAL VERSION (Supports Railway + Localhost)
+
+// -----------------------------
+//  IMPORTS
+// -----------------------------
 const mysql = require("mysql2/promise");
 
-// Database configuration (supports Railway & local)
+// -----------------------------
+//  DATABASE CONFIG
+// -----------------------------
 const dbConfig = {
-  host: process.env.DB_HOST || process.env.MYSQLHOST || "localhost",
-  port: process.env.DB_PORT || process.env.MYSQLPORT || 3306,
-  user: process.env.DB_USER || process.env.MYSQLUSER || "root",
-  password: process.env.DB_PASSWORD || process.env.MYSQLPASSWORD || "",
-  database: process.env.DB_NAME || process.env.MYSQLDATABASE || "admin_pims",
-  multipleStatements: true,
-  connectTimeout: 20000,
+  host: process.env.MYSQLHOST || process.env.DB_HOST || "localhost",
+  user: process.env.MYSQLUSER || process.env.DB_USER || "root",
+  password: process.env.MYSQLPASSWORD || process.env.DB_PASSWORD || "",
+  database: process.env.MYSQLDATABASE || process.env.DB_NAME || "admin_pims",
+  port: process.env.MYSQLPORT || process.env.DB_PORT || 3306,
+  waitForConnections: true,
+  connectionLimit: 10,
+  queueLimit: 0,
 };
 
-// Create connection pool
+// Detect if running on Railway
+const isRailway =
+  process.env.MYSQLHOST ||
+  process.env.MYSQLPUBLICURL ||
+  process.env.RAILWAY_ENVIRONMENT;
+
+// Create pool
 const pool = mysql.createPool(dbConfig);
 
+// -----------------------------
+//  INIT DATABASE
+// -----------------------------
 async function initDatabase() {
-  let connection;
-
   try {
-    console.log("🚀 Connecting to MySQL server...");
-    connection = await mysql.createConnection({
-      ...dbConfig,
-      database: undefined, // connect without database first
-    });
+    console.log("🚀 Initializing Database...");
 
-    console.log("✅ Connected to MySQL");
+    // If local, create DB first
+    if (!isRailway) {
+      const connection = await mysql.createConnection({
+        host: dbConfig.host,
+        user: dbConfig.user,
+        password: dbConfig.password,
+        port: dbConfig.port,
+      });
 
-    // Create database if not exists (only for local development)
-    // For Railway, the database is already provided
-    if (!process.env.MYSQLDATABASE) {
-      await connection.query(`CREATE DATABASE IF NOT EXISTS admin_pims;`);
-      await connection.query(`USE admin_pims;`);
-      console.log("✅ Database 'admin_pims' created/selected");
-    } else {
-      // For Railway, we need to select the database explicitly
-      await connection.query(`USE ${process.env.MYSQLDATABASE};`);
-      console.log("✅ Using Railway provided database");
+      await connection.query(
+        `CREATE DATABASE IF NOT EXISTS \`${dbConfig.database}\`;`
+      );
+      await connection.end();
+      console.log("📦 Database created (Local Mode)");
     }
 
-    console.log("🧱 Creating tables...");
+    // Now proceed with pool connection
+    const conn = await pool.getConnection();
 
-    // USERS
-    await connection.query(`
+    console.log("📁 Creating Tables...");
+
+    // -----------------------------
+    //  TABLES (ORDER FIXED)
+    // -----------------------------
+
+    // 1. users
+    await conn.query(`
       CREATE TABLE IF NOT EXISTS users (
-        id INT AUTO_INCREMENT PRIMARY KEY,
-        name VARCHAR(255) NOT NULL,
-        email VARCHAR(255) NOT NULL UNIQUE,
+        id CHAR(36) PRIMARY KEY,
+        firstName VARCHAR(255) NOT NULL,
+        lastName VARCHAR(255),
+        email VARCHAR(255) UNIQUE NOT NULL,
         password VARCHAR(255) NOT NULL,
-        role ENUM('admin', 'operator') NOT NULL DEFAULT 'operator',
-        createdAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-        updatedAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+        phone VARCHAR(50),
+        address TEXT,
+        createdAt DATETIME DEFAULT CURRENT_TIMESTAMP,
+        updatedAt DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
       );
     `);
 
-    // CATEGORIES (Create before materials that reference it)
-    await connection.query(`
+    // 2. roles
+    await conn.query(`
+      CREATE TABLE IF NOT EXISTS roles (
+        id CHAR(36) PRIMARY KEY,
+        name VARCHAR(100) NOT NULL UNIQUE
+      );
+    `);
+
+    // 3. permissions
+    await conn.query(`
+      CREATE TABLE IF NOT EXISTS permissions (
+        id CHAR(36) PRIMARY KEY,
+        name VARCHAR(100) NOT NULL UNIQUE
+      );
+    `);
+
+    // 4. role_permissions
+    await conn.query(`
+      CREATE TABLE IF NOT EXISTS role_permissions (
+        roleId CHAR(36),
+        permissionId CHAR(36),
+        PRIMARY KEY (roleId, permissionId),
+        FOREIGN KEY (roleId) REFERENCES roles(id),
+        FOREIGN KEY (permissionId) REFERENCES permissions(id)
+      );
+    `);
+
+    // 5. user_roles
+    await conn.query(`
+      CREATE TABLE IF NOT EXISTS user_roles (
+        userId CHAR(36),
+        roleId CHAR(36),
+        PRIMARY KEY (userId, roleId),
+        FOREIGN KEY (userId) REFERENCES users(id),
+        FOREIGN KEY (roleId) REFERENCES roles(id)
+      );
+    `);
+
+    // 6. user_permissions
+    await conn.query(`
+      CREATE TABLE IF NOT EXISTS user_permissions (
+        userId CHAR(36),
+        permissionId CHAR(36),
+        PRIMARY KEY (userId, permissionId),
+        FOREIGN KEY (userId) REFERENCES users(id),
+        FOREIGN KEY (permissionId) REFERENCES permissions(id)
+      );
+    `);
+
+    // 7. categories
+    await conn.query(`
       CREATE TABLE IF NOT EXISTS categories (
-        id INT AUTO_INCREMENT PRIMARY KEY,
-        code VARCHAR(10) NOT NULL UNIQUE,
-        name VARCHAR(255) NOT NULL,
-        createdAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-        updatedAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+        id CHAR(36) PRIMARY KEY,
+        name VARCHAR(255) NOT NULL UNIQUE
       );
     `);
 
-    // UNIT OF MEASURES (Create before materials that reference it)
-    await connection.query(`
+    // 8. unit_of_measures
+    await conn.query(`
       CREATE TABLE IF NOT EXISTS unit_of_measures (
-        id INT AUTO_INCREMENT PRIMARY KEY,
+        id CHAR(36) PRIMARY KEY,
         name VARCHAR(255) NOT NULL,
-        symbol VARCHAR(50) NOT NULL,
-        createdAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-        updatedAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+        symbol VARCHAR(50)
       );
     `);
 
-    // MATERIALS (Now we can include the foreign key columns directly)
-    await connection.query(`
+    // 9. materials
+    await conn.query(`
       CREATE TABLE IF NOT EXISTS materials (
-        id INT AUTO_INCREMENT PRIMARY KEY,
+        id CHAR(36) PRIMARY KEY,
         name VARCHAR(255) NOT NULL,
-        unit VARCHAR(50) NOT NULL,
-        quantity DECIMAL(10,2) NOT NULL DEFAULT 0,
+        categoryId CHAR(36),
+        uomId CHAR(36),
+        quantity DECIMAL(10,3) NOT NULL DEFAULT 0,
         unitPrice DECIMAL(10,2) NOT NULL DEFAULT 0,
-        lowStockThreshold DECIMAL(10,2) NOT NULL DEFAULT 0,
-        categoryId INT,
-        uomId INT,
-        createdAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-        updatedAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+        lowStockThreshold DECIMAL(10,3) DEFAULT 0,
+        createdAt DATETIME DEFAULT CURRENT_TIMESTAMP,
+        updatedAt DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
         FOREIGN KEY (categoryId) REFERENCES categories(id),
         FOREIGN KEY (uomId) REFERENCES unit_of_measures(id)
       );
     `);
 
-    // RECIPES
-    await connection.query(`
-      CREATE TABLE IF NOT EXISTS recipes (
-        id INT AUTO_INCREMENT PRIMARY KEY,
+    // 10. suppliers
+    await conn.query(`
+      CREATE TABLE IF NOT EXISTS suppliers (
+        id CHAR(36) PRIMARY KEY,
         name VARCHAR(255) NOT NULL,
-        category VARCHAR(100) NOT NULL,
-        categoryId INT,
-        createdAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-        updatedAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-        FOREIGN KEY (categoryId) REFERENCES categories(id)
+        email VARCHAR(255),
+        phone VARCHAR(50),
+        address TEXT,
+        contactPerson VARCHAR(255)
       );
     `);
 
-    // RECIPE INGREDIENTS
-    await connection.query(`
+    // 11. customers
+    await conn.query(`
+      CREATE TABLE IF NOT EXISTS customers (
+        id CHAR(36) PRIMARY KEY,
+        name VARCHAR(255) NOT NULL,
+        email VARCHAR(255),
+        phone VARCHAR(50),
+        address TEXT,
+        contactPerson VARCHAR(255)
+      );
+    `);
+
+    // 12. recipes
+    await conn.query(`
+      CREATE TABLE IF NOT EXISTS recipes (
+        id CHAR(36) PRIMARY KEY,
+        name VARCHAR(255) NOT NULL,
+        description TEXT,
+        createdAt DATETIME DEFAULT CURRENT_TIMESTAMP,
+        updatedAt DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+      );
+    `);
+
+    // 13. recipe_ingredients
+    await conn.query(`
       CREATE TABLE IF NOT EXISTS recipe_ingredients (
-        id INT AUTO_INCREMENT PRIMARY KEY,
-        recipeId INT NOT NULL,
-        materialId INT NOT NULL,
-        quantity DECIMAL(10,2) NOT NULL,
-        FOREIGN KEY (recipeId) REFERENCES recipes(id) ON DELETE CASCADE,
-        FOREIGN KEY (materialId) REFERENCES materials(id) ON DELETE CASCADE
+        id CHAR(36) PRIMARY KEY,
+        recipeId CHAR(36),
+        materialId CHAR(36),
+        uomId CHAR(36),
+        quantity DECIMAL(10,3) NOT NULL,
+        FOREIGN KEY (recipeId) REFERENCES recipes(id),
+        FOREIGN KEY (materialId) REFERENCES materials(id),
+        FOREIGN KEY (uomId) REFERENCES unit_of_measures(id)
       );
     `);
 
-    // PRODUCTION LOGS
-    await connection.query(`
+    // 14. purchase_orders
+    await conn.query(`
+      CREATE TABLE IF NOT EXISTS purchase_orders (
+        id CHAR(36) PRIMARY KEY,
+        supplierId CHAR(36),
+        orderDate DATE,
+        expectedDeliveryDate DATE,
+        totalAmount DECIMAL(10,2),
+        status VARCHAR(50),
+        FOREIGN KEY (supplierId) REFERENCES suppliers(id)
+      );
+    `);
+
+    // 15. purchase_order_items
+    await conn.query(`
+      CREATE TABLE IF NOT EXISTS purchase_order_items (
+        id CHAR(36) PRIMARY KEY,
+        purchaseOrderId CHAR(36),
+        materialId CHAR(36),
+        uomId CHAR(36),
+        quantity DECIMAL(10,3),
+        unitPrice DECIMAL(10,2),
+        FOREIGN KEY (purchaseOrderId) REFERENCES purchase_orders(id),
+        FOREIGN KEY (materialId) REFERENCES materials(id),
+        FOREIGN KEY (uomId) REFERENCES unit_of_measures(id)
+      );
+    `);
+
+    // 16. production_logs
+    await conn.query(`
       CREATE TABLE IF NOT EXISTS production_logs (
-        id INT AUTO_INCREMENT PRIMARY KEY,
-        recipeId INT NOT NULL,
-        quantityProduced DECIMAL(10,2) NOT NULL,
-        materialCost DECIMAL(10,2) NOT NULL,
-        additionalExpense DECIMAL(10,2) NOT NULL DEFAULT 0,
-        totalCost DECIMAL(10,2) GENERATED ALWAYS AS (materialCost + additionalExpense) STORED,
-        customerId INT,
-        batchNumber VARCHAR(50),
-        status ENUM('PENDING', 'COMPLETED', 'CANCELLED') NOT NULL DEFAULT 'PENDING',
-        createdAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-        updatedAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+        id CHAR(36) PRIMARY KEY,
+        recipeId CHAR(36),
+        customerId CHAR(36),
+        quantityProduced DECIMAL(10,3),
+        productionDate DATE,
         FOREIGN KEY (recipeId) REFERENCES recipes(id),
         FOREIGN KEY (customerId) REFERENCES customers(id)
       );
     `);
 
-    // SUPPLIERS
-    await connection.query(`
-      CREATE TABLE IF NOT EXISTS suppliers (
-        id INT AUTO_INCREMENT PRIMARY KEY,
-        name VARCHAR(255) NOT NULL,
-        contact VARCHAR(255),
-        email VARCHAR(255),
-        phone VARCHAR(50),
-        address TEXT,
-        createdAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-        updatedAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
-      );
+    console.log("✅ All tables created successfully!");
+
+    // -----------------------------
+    //  INSERT SAMPLE DATA
+    // -----------------------------
+    console.log("📥 Inserting sample admin user & roles...");
+
+    const adminId = "00000000-0000-0000-0000-000000000001";
+    const adminRole = "00000000-0000-0000-0000-000000000010";
+
+    await conn.query(`
+      INSERT IGNORE INTO users (id, firstName, lastName, email, password)
+      VALUES ('${adminId}', 'Admin', 'User', 'admin@example.com', 'admin123');
     `);
 
-    // CUSTOMERS
-    await connection.query(`
-      CREATE TABLE IF NOT EXISTS customers (
-        id INT AUTO_INCREMENT PRIMARY KEY,
-        name VARCHAR(255) NOT NULL,
-        email VARCHAR(255),
-        phone VARCHAR(50),
-        address TEXT,
-        createdAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-        updatedAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
-      );
+    await conn.query(`
+      INSERT IGNORE INTO roles (id, name)
+      VALUES ('${adminRole}', 'admin');
     `);
 
-    // PURCHASE ORDERS
-    await connection.query(`
-      CREATE TABLE IF NOT EXISTS purchase_orders (
-        id INT AUTO_INCREMENT PRIMARY KEY,
-        orderNumber VARCHAR(50) NOT NULL UNIQUE,
-        supplierId INT NOT NULL,
-        subtotal DECIMAL(10,2) NOT NULL,
-        tax DECIMAL(10,2) NOT NULL,
-        total DECIMAL(10,2) NOT NULL,
-        status ENUM('PENDING', 'APPROVED', 'CANCELLED') NOT NULL DEFAULT 'PENDING',
-        createdAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-        updatedAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-        FOREIGN KEY (supplierId) REFERENCES suppliers(id)
-      );
+    await conn.query(`
+      INSERT IGNORE INTO user_roles (userId, roleId)
+      VALUES ('${adminId}', '${adminRole}');
     `);
 
-    // PURCHASE ORDER ITEMS
-    await connection.query(`
-      CREATE TABLE IF NOT EXISTS purchase_order_items (
-        id INT AUTO_INCREMENT PRIMARY KEY,
-        purchaseOrderId INT NOT NULL,
-        materialId INT NOT NULL,
-        quantity DECIMAL(10,2) NOT NULL,
-        unitPrice DECIMAL(10,2) NOT NULL,
-        totalPrice DECIMAL(10,2) NOT NULL,
-        FOREIGN KEY (purchaseOrderId) REFERENCES purchase_orders(id) ON DELETE CASCADE,
-        FOREIGN KEY (materialId) REFERENCES materials(id)
-      );
-    `);
+    console.log("✨ Sample admin user inserted!");
 
-    console.log("✅ All tables and relationships created successfully.");
-
-    // Check if tables exist
-    console.log("🔍 Checking if tables exist...");
-    const [tables] = await connection.query("SHOW TABLES");
-    console.log("Tables in database:", tables);
-
-    // Seed data
-    console.log("🌱 Inserting initial data...");
-
-    try {
-      await connection.query(`
-        INSERT INTO users (name, email, password, role)
-        VALUES ('Admin User', 'admin@example.com', '$2b$10$IxhgKfJq1yb900HvtYpmqOj95kl2HidCDdkWQSHI8m5Efkpqbfa22', 'admin')
-        ON DUPLICATE KEY UPDATE email = email;
-      `);
-
-      // Insert default categories
-      await connection.query(`
-        INSERT IGNORE INTO categories (code, name) VALUES 
-        ('001', 'Raw Materials'),
-        ('002', 'Packaging'),
-        ('003', 'Finished Goods');
-      `);
-
-      // Insert default unit of measures
-      await connection.query(`
-        INSERT IGNORE INTO unit_of_measures (name, symbol) VALUES 
-        ('Kilogram', 'kg'),
-        ('Gram', 'g'),
-        ('Liter', 'l'),
-        ('Milliliter', 'ml'),
-        ('Piece', 'pc'),
-        ('Box', 'box');
-      `);
-
-      await connection.query(`
-        INSERT INTO materials (name, unit, quantity, unitPrice, lowStockThreshold, categoryId, uomId) VALUES
-        ('Flour', 'kg', 200, 120, 50, (SELECT id FROM categories WHERE code = '001'), (SELECT id FROM unit_of_measures WHERE symbol = 'kg')),
-        ('Sugar', 'kg', 100, 140, 30, (SELECT id FROM categories WHERE code = '001'), (SELECT id FROM unit_of_measures WHERE symbol = 'kg')),
-        ('Salt', 'kg', 50, 20, 10, (SELECT id FROM categories WHERE code = '001'), (SELECT id FROM unit_of_measures WHERE symbol = 'kg')),
-        ('Oil', 'l', 30, 150, 5, (SELECT id FROM categories WHERE code = '001'), (SELECT id FROM unit_of_measures WHERE symbol = 'l')),
-        ('Yeast', 'g', 500, 0.5, 100, (SELECT id FROM categories WHERE code = '001'), (SELECT id FROM unit_of_measures WHERE symbol = 'g'))
-        ON DUPLICATE KEY UPDATE name = name;
-      `);
-
-      await connection.query(`
-        INSERT INTO recipes (name, category, categoryId)
-        VALUES ('Bread', 'Bakery', (SELECT id FROM categories WHERE code = '003'))
-        ON DUPLICATE KEY UPDATE name = name;
-      `);
-
-      const [rows] = await connection.query(`SELECT id FROM recipes WHERE name='Bread' LIMIT 1;`);
-      const recipeId = rows[0]?.id;
-
-      if (recipeId) {
-        await connection.query(`
-          INSERT INTO recipe_ingredients (recipeId, materialId, quantity)
-          VALUES
-          (${recipeId}, (SELECT id FROM materials WHERE name='Flour' LIMIT 1), 1),
-          (${recipeId}, (SELECT id FROM materials WHERE name='Sugar' LIMIT 1), 0.1),
-          (${recipeId}, (SELECT id FROM materials WHERE name='Salt' LIMIT 1), 0.02),
-          (${recipeId}, (SELECT id FROM materials WHERE name='Oil' LIMIT 1), 0.1),
-          (${recipeId}, (SELECT id FROM materials WHERE name='Yeast' LIMIT 1), 10)
-          ON DUPLICATE KEY UPDATE recipeId = recipeId;
-        `);
-      }
-
-      console.log("✅ Sample data inserted successfully!");
-    } catch (err) {
-      console.log(`⚠️  Warning: Failed to insert sample data: ${err.message}`);
-      console.log("ℹ️  Continuing with database initialization...");
-    }
-
-    console.log("🎉 Database setup completed successfully!");
-
-    await connection.end();
-  } catch (err) {
-    console.error("❌ Database initialization failed:", err.message);
-    if (connection) await connection.end();
-    process.exit(1);
+    conn.release();
+  } catch (error) {
+    console.error("❌ DB Initialization Error:", error);
   }
 }
 
-// Test database connection function
+// -----------------------------
+//  TEST CONNECTION
+// -----------------------------
 async function testConnection() {
-  let connection;
-  
   try {
-    console.log("🚀 Testing database connection...");
-    connection = await mysql.createConnection(dbConfig);
-    console.log("✅ Database connection successful");
-    await connection.end();
-    return true;
+    await pool.getConnection();
+    console.log("✅ Database connected successfully!");
   } catch (err) {
-    console.error("❌ Database connection failed:", err.message);
-    if (connection) await connection.end();
-    return false;
+    console.error("❌ Database connection failed!", err);
   }
 }
 
-module.exports = { initDatabase, testConnection, pool };
+// -----------------------------
+//  EXPORTS
+// -----------------------------
+module.exports = {
+  pool,
+  initDatabase,
+  testConnection,
+};
