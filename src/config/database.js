@@ -1,303 +1,194 @@
-// db.js — FINAL VERSION (Supports Railway + Localhost)
+const mysql = require("mysql2");
 
-// -----------------------------
-//  IMPORTS
-// -----------------------------
-const mysql = require("mysql2/promise");
+// ---- 1. Create pool (Railway OR Local) ----
+const pool = mysql
+  .createPool({
+    host: process.env.MYSQLHOST || "localhost",
+    user: process.env.MYSQLUSER || "root",
+    password: process.env.MYSQLPASSWORD || "",
+    database: process.env.MYSQLDATABASE || "admin_pims",
+    port: process.env.MYSQLPORT ? Number(process.env.MYSQLPORT) : 3306,
+    connectionLimit: 10,
+  })
+  .promise();
 
-// -----------------------------
-//  DATABASE CONFIG
-// -----------------------------
-const dbConfig = {
-  host: process.env.MYSQLHOST || process.env.DB_HOST || "localhost",
-  user: process.env.MYSQLUSER || process.env.DB_USER || "root",
-  password: process.env.MYSQLPASSWORD || process.env.DB_PASSWORD || "",
-  database: process.env.MYSQLDATABASE || process.env.DB_NAME || "admin_pims",
-  port: process.env.MYSQLPORT || process.env.DB_PORT || 3306,
-  waitForConnections: true,
-  connectionLimit: 10,
-  queueLimit: 0,
-};
-
-// Detect if running on Railway
-const isRailway =
-  process.env.MYSQLHOST ||
-  process.env.MYSQLPUBLICURL ||
-  process.env.RAILWAY_ENVIRONMENT;
-
-// Create pool
-const pool = mysql.createPool(dbConfig);
-
-// -----------------------------
-//  INIT DATABASE
-// -----------------------------
+// ---- 2. Initialize Database ----
 async function initDatabase() {
   try {
     console.log("🚀 Initializing Database...");
 
-    // If local, create DB first
-    if (!isRailway) {
-      const connection = await mysql.createConnection({
-        host: dbConfig.host,
-        user: dbConfig.user,
-        password: dbConfig.password,
-        port: dbConfig.port,
-      });
-
-      await connection.query(
-        `CREATE DATABASE IF NOT EXISTS \`${dbConfig.database}\`;`
-      );
-      await connection.end();
-      console.log("📦 Database created (Local Mode)");
-    }
-
-    // Now proceed with pool connection
-    const conn = await pool.getConnection();
-
-    console.log("📁 Creating Tables...");
-
-    // -----------------------------
-    //  TABLES (ORDER FIXED)
-    // -----------------------------
-
-    // 1. users
-    await conn.query(`
+    // ---- Create Users table ----
+    await pool.query(`
       CREATE TABLE IF NOT EXISTS users (
-        id CHAR(36) PRIMARY KEY,
-        firstName VARCHAR(255) NOT NULL,
-        lastName VARCHAR(255),
-        email VARCHAR(255) UNIQUE NOT NULL,
+        id INT AUTO_INCREMENT PRIMARY KEY,
+        name VARCHAR(255) NOT NULL,
+        email VARCHAR(255) NOT NULL UNIQUE,
         password VARCHAR(255) NOT NULL,
-        phone VARCHAR(50),
-        address TEXT,
-        createdAt DATETIME DEFAULT CURRENT_TIMESTAMP,
-        updatedAt DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
-      );
+        role ENUM('admin', 'manager', 'operator') NOT NULL DEFAULT 'operator',
+        createdAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        updatedAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+      )
     `);
 
-    // 2. roles
-    await conn.query(`
+    // ---- Create Roles table ----
+    await pool.query(`
       CREATE TABLE IF NOT EXISTS roles (
-        id CHAR(36) PRIMARY KEY,
-        name VARCHAR(100) NOT NULL UNIQUE
-      );
+        id INT AUTO_INCREMENT PRIMARY KEY,
+        name VARCHAR(50) NOT NULL UNIQUE,
+        description TEXT,
+        createdAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        updatedAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+      )
     `);
 
-    // 3. permissions
-    await conn.query(`
+    // ---- Create Permissions table ----
+    await pool.query(`
       CREATE TABLE IF NOT EXISTS permissions (
-        id CHAR(36) PRIMARY KEY,
-        name VARCHAR(100) NOT NULL UNIQUE
-      );
+        id INT AUTO_INCREMENT PRIMARY KEY,
+        name VARCHAR(100) NOT NULL UNIQUE,
+        description TEXT,
+        createdAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        updatedAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+      )
     `);
 
-    // 4. role_permissions
-    await conn.query(`
+    // ---- Create role_permissions ----
+    await pool.query(`
       CREATE TABLE IF NOT EXISTS role_permissions (
-        roleId CHAR(36),
-        permissionId CHAR(36),
-        PRIMARY KEY (roleId, permissionId),
-        FOREIGN KEY (roleId) REFERENCES roles(id),
-        FOREIGN KEY (permissionId) REFERENCES permissions(id)
-      );
+        id INT AUTO_INCREMENT PRIMARY KEY,
+        roleId INT NOT NULL,
+        permissionId INT NOT NULL,
+        FOREIGN KEY (roleId) REFERENCES roles(id) ON DELETE CASCADE,
+        FOREIGN KEY (permissionId) REFERENCES permissions(id) ON DELETE CASCADE,
+        UNIQUE KEY unique_role_permission (roleId, permissionId)
+      )
     `);
 
-    // 5. user_roles
-    await conn.query(`
+    // ---- Create user_roles ----
+    await pool.query(`
       CREATE TABLE IF NOT EXISTS user_roles (
-        userId CHAR(36),
-        roleId CHAR(36),
-        PRIMARY KEY (userId, roleId),
-        FOREIGN KEY (userId) REFERENCES users(id),
-        FOREIGN KEY (roleId) REFERENCES roles(id)
-      );
+        id INT AUTO_INCREMENT PRIMARY KEY,
+        userId INT NOT NULL,
+        roleId INT NOT NULL,
+        FOREIGN KEY (userId) REFERENCES users(id) ON DELETE CASCADE,
+        FOREIGN KEY (roleId) REFERENCES roles(id) ON DELETE CASCADE,
+        UNIQUE KEY unique_user_role (userId, roleId)
+      )
     `);
 
-    // 6. user_permissions
-    await conn.query(`
+    // ---- Create user_permissions ----
+    await pool.query(`
       CREATE TABLE IF NOT EXISTS user_permissions (
-        userId CHAR(36),
-        permissionId CHAR(36),
-        PRIMARY KEY (userId, permissionId),
-        FOREIGN KEY (userId) REFERENCES users(id),
-        FOREIGN KEY (permissionId) REFERENCES permissions(id)
-      );
+        id INT AUTO_INCREMENT PRIMARY KEY,
+        userId INT NOT NULL,
+        permissionId INT NOT NULL,
+        FOREIGN KEY (userId) REFERENCES users(id) ON DELETE CASCADE,
+        FOREIGN KEY (permissionId) REFERENCES permissions(id) ON DELETE CASCADE,
+        UNIQUE KEY unique_user_permission (userId, permissionId)
+      )
     `);
 
-    // 7. categories
-    await conn.query(`
+    // ---- Create Categories ----
+    await pool.query(`
       CREATE TABLE IF NOT EXISTS categories (
-        id CHAR(36) PRIMARY KEY,
-        name VARCHAR(255) NOT NULL UNIQUE
-      );
+        id INT AUTO_INCREMENT PRIMARY KEY,
+        code VARCHAR(50) NOT NULL UNIQUE,
+        name VARCHAR(255) NOT NULL,
+        createdAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        updatedAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+      )
     `);
 
-    // 8. unit_of_measures
-    await conn.query(`
+    // ---- Create Unit of Measures ----
+    await pool.query(`
       CREATE TABLE IF NOT EXISTS unit_of_measures (
-        id CHAR(36) PRIMARY KEY,
-        name VARCHAR(255) NOT NULL,
-        symbol VARCHAR(50)
-      );
+        id INT AUTO_INCREMENT PRIMARY KEY,
+        name VARCHAR(100) NOT NULL,
+        symbol VARCHAR(20) NOT NULL,
+        createdAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        updatedAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+      )
     `);
 
-    // 9. materials
-    await conn.query(`
+    // ---- Create Materials ----
+    await pool.query(`
       CREATE TABLE IF NOT EXISTS materials (
-        id CHAR(36) PRIMARY KEY,
+        id INT AUTO_INCREMENT PRIMARY KEY,
         name VARCHAR(255) NOT NULL,
-        categoryId CHAR(36),
-        uomId CHAR(36),
+        unit VARCHAR(50) NOT NULL,
         quantity DECIMAL(10,3) NOT NULL DEFAULT 0,
         unitPrice DECIMAL(10,2) NOT NULL DEFAULT 0,
-        lowStockThreshold DECIMAL(10,3) DEFAULT 0,
-        createdAt DATETIME DEFAULT CURRENT_TIMESTAMP,
-        updatedAt DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+        lowStockThreshold DECIMAL(10,3) NOT NULL DEFAULT 0,
+        categoryId INT,
+        uomId INT,
         FOREIGN KEY (categoryId) REFERENCES categories(id),
         FOREIGN KEY (uomId) REFERENCES unit_of_measures(id)
-      );
+      )
     `);
 
-    // 10. suppliers
-    await conn.query(`
+    // ---- Create Suppliers ----
+    await pool.query(`
       CREATE TABLE IF NOT EXISTS suppliers (
-        id CHAR(36) PRIMARY KEY,
+        id INT AUTO_INCREMENT PRIMARY KEY,
         name VARCHAR(255) NOT NULL,
+        contactPerson VARCHAR(255),
         email VARCHAR(255),
         phone VARCHAR(50),
         address TEXT,
-        contactPerson VARCHAR(255)
-      );
+        createdAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        updatedAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+      )
     `);
 
-    // 11. customers
-    await conn.query(`
+    // ---- Create Customers ----
+    await pool.query(`
       CREATE TABLE IF NOT EXISTS customers (
-        id CHAR(36) PRIMARY KEY,
+        id INT AUTO_INCREMENT PRIMARY KEY,
         name VARCHAR(255) NOT NULL,
+        contactPerson VARCHAR(255),
         email VARCHAR(255),
         phone VARCHAR(50),
         address TEXT,
-        contactPerson VARCHAR(255)
-      );
+        createdAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        updatedAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+      )
     `);
 
-    // 12. recipes
-    await conn.query(`
+    // ---- Create Recipes ----
+    await pool.query(`
       CREATE TABLE IF NOT EXISTS recipes (
-        id CHAR(36) PRIMARY KEY,
+        id INT AUTO_INCREMENT PRIMARY KEY,
         name VARCHAR(255) NOT NULL,
         description TEXT,
-        createdAt DATETIME DEFAULT CURRENT_TIMESTAMP,
-        updatedAt DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
-      );
+        categoryId INT,
+        FOREIGN KEY (categoryId) REFERENCES categories(id)
+      )
     `);
 
-    // 13. recipe_ingredients
-    await conn.query(`
+    // ---- Create Recipe Ingredients ----
+    await pool.query(`
       CREATE TABLE IF NOT EXISTS recipe_ingredients (
-        id CHAR(36) PRIMARY KEY,
-        recipeId CHAR(36),
-        materialId CHAR(36),
-        uomId CHAR(36),
+        id INT AUTO_INCREMENT PRIMARY KEY,
+        recipeId INT NOT NULL,
+        materialId INT NOT NULL,
         quantity DECIMAL(10,3) NOT NULL,
-        FOREIGN KEY (recipeId) REFERENCES recipes(id),
+        uomId INT,
+        FOREIGN KEY (recipeId) REFERENCES recipes(id) ON DELETE CASCADE,
         FOREIGN KEY (materialId) REFERENCES materials(id),
         FOREIGN KEY (uomId) REFERENCES unit_of_measures(id)
-      );
+      )
     `);
 
-    // 14. purchase_orders
-    await conn.query(`
-      CREATE TABLE IF NOT EXISTS purchase_orders (
-        id CHAR(36) PRIMARY KEY,
-        supplierId CHAR(36),
-        orderDate DATE,
-        expectedDeliveryDate DATE,
-        totalAmount DECIMAL(10,2),
-        status VARCHAR(50),
-        FOREIGN KEY (supplierId) REFERENCES suppliers(id)
-      );
+    // ---- Insert admin user (FIXED) ----
+    await pool.query(`
+      INSERT IGNORE INTO users (id, name, email, password, role)
+      VALUES (1, 'Admin User', 'admin@example.com', '\$2a\$10\$xYzhashedAdminPasswordHere', 'admin')
     `);
 
-    // 15. purchase_order_items
-    await conn.query(`
-      CREATE TABLE IF NOT EXISTS purchase_order_items (
-        id CHAR(36) PRIMARY KEY,
-        purchaseOrderId CHAR(36),
-        materialId CHAR(36),
-        uomId CHAR(36),
-        quantity DECIMAL(10,3),
-        unitPrice DECIMAL(10,2),
-        FOREIGN KEY (purchaseOrderId) REFERENCES purchase_orders(id),
-        FOREIGN KEY (materialId) REFERENCES materials(id),
-        FOREIGN KEY (uomId) REFERENCES unit_of_measures(id)
-      );
-    `);
-
-    // 16. production_logs
-    await conn.query(`
-      CREATE TABLE IF NOT EXISTS production_logs (
-        id CHAR(36) PRIMARY KEY,
-        recipeId CHAR(36),
-        customerId CHAR(36),
-        quantityProduced DECIMAL(10,3),
-        productionDate DATE,
-        FOREIGN KEY (recipeId) REFERENCES recipes(id),
-        FOREIGN KEY (customerId) REFERENCES customers(id)
-      );
-    `);
-
-    console.log("✅ All tables created successfully!");
-
-    // -----------------------------
-    //  INSERT SAMPLE DATA
-    // -----------------------------
-    console.log("📥 Inserting sample admin user & roles...");
-
-    const adminId = "00000000-0000-0000-0000-000000000001";
-    const adminRole = "00000000-0000-0000-0000-000000000010";
-
-    await conn.query(`
-      INSERT IGNORE INTO users (id, firstName, lastName, email, password)
-      VALUES ('${adminId}', 'Admin', 'User', 'admin@example.com', 'admin123');
-    `);
-
-    await conn.query(`
-      INSERT IGNORE INTO roles (id, name)
-      VALUES ('${adminRole}', 'admin');
-    `);
-
-    await conn.query(`
-      INSERT IGNORE INTO user_roles (userId, roleId)
-      VALUES ('${adminId}', '${adminRole}');
-    `);
-
-    console.log("✨ Sample admin user inserted!");
-
-    conn.release();
-  } catch (error) {
-    console.error("❌ DB Initialization Error:", error);
-  }
-}
-
-// -----------------------------
-//  TEST CONNECTION
-// -----------------------------
-async function testConnection() {
-  try {
-    await pool.getConnection();
-    console.log("✅ Database connected successfully!");
+    console.log("✅ Database initialized successfully!");
   } catch (err) {
-    console.error("❌ Database connection failed!", err);
+    console.error("❌ DB Initialization Error:", err);
   }
 }
 
-// -----------------------------
-//  EXPORTS
-// -----------------------------
-module.exports = {
-  pool,
-  initDatabase,
-  testConnection,
-};
+module.exports = { pool, initDatabase };
