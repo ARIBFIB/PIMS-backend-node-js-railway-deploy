@@ -1,4 +1,5 @@
-const pool = require('../config/dbPool'); // Instead of databaseconst Recipe = require('./Recipe');
+const pool = require('../config/dbPool');
+const Recipe = require('./Recipe');
 const Material = require('./Material');
 
 class ProductionLog {
