@@ -44,7 +44,7 @@ class Material {
   }
 
   static async create(materialData) {
-    const { name, unit, categoryId, uomId, quantity, lowStockThreshold, itemCode } = materialData;
+    const { name, unit, categoryId, uomId, quantity, lowStockThreshold } = materialData;
     try {
       console.log('Executing Material.create with data:', materialData);
       const [result] = await pool.execute(
