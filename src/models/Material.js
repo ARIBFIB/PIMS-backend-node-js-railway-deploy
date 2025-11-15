@@ -1,65 +1,91 @@
-// const pool = require('../config/database');
-const pool = require('../config/dbPool'); // Instead of database
+const pool = require('../config/dbPool');
 
 class Material {
   static async getAll() {
     try {
-      const [rows] = await pool.execute(`
+      console.log('Executing Material.getAll query...');
+      const query = `
         SELECT m.*, c.name as categoryName, u.name as uomName, u.symbol as uomSymbol 
         FROM materials m 
         LEFT JOIN categories c ON m.categoryId = c.id 
         LEFT JOIN unit_of_measures u ON m.uomId = u.id 
         ORDER BY m.name
-      `);
+      `;
+      console.log('Query:', query);
+      const [rows] = await pool.execute(query);
+      console.log('Material.getAll query returned', rows.length, 'rows');
       return rows;
     } catch (error) {
-      throw error;
+      console.error('Error in Material.getAll:', error);
+      console.error('Error code:', error.code);
+      console.error('Error errno:', error.errno);
+      console.error('Error sqlState:', error.sqlState);
+      console.error('Error sqlMessage:', error.sqlMessage);
+      
+      // Try a simpler query as fallback
+      try {
+        console.log('Trying fallback query without joins...');
+        const [rows] = await pool.execute('SELECT * FROM materials ORDER BY name');
+        console.log('Fallback query returned', rows.length, 'rows');
+        return rows.map(row => ({
+          ...row,
+          categoryName: null,
+          uomName: null,
+          uomSymbol: null
+        }));
+      } catch (fallbackError) {
+        console.error('Fallback query also failed:', fallbackError);
+        throw fallbackError;
+      }
     }
   }
 
   static async findById(id) {
     try {
-      const [rows] = await pool.execute(`
+      console.log('Executing Material.findById query for ID:', id);
+      const query = `
         SELECT m.*, c.name as categoryName, u.name as uomName, u.symbol as uomSymbol 
         FROM materials m 
         LEFT JOIN categories c ON m.categoryId = c.id 
         LEFT JOIN unit_of_measures u ON m.uomId = u.id 
         WHERE m.id = ?
-      `, [id]);
+      `;
+      console.log('Query:', query);
+      const [rows] = await pool.execute(query, [id]);
+      console.log('Material.findById query returned', rows.length, 'rows');
       return rows[0] || null;
     } catch (error) {
+      console.error('Error in Material.findById:', error);
+      console.error('Error code:', error.code);
+      console.error('Error errno:', error.errno);
+      console.error('Error sqlState:', error.sqlState);
+      console.error('Error sqlMessage:', error.sqlMessage);
       throw error;
     }
   }
 
   static async create(materialData) {
-    console.log('Creating material with data:', materialData);
     const { name, unit, categoryId, uomId, quantity, unitPrice, lowStockThreshold } = materialData;
     
     try {
+      console.log('Executing Material.create with data:', materialData);
       const [result] = await pool.execute(
         'INSERT INTO materials (name, unit, categoryId, uomId, quantity, unitPrice, lowStockThreshold) VALUES (?, ?, ?, ?, ?, ?, ?)',
         [name, unit, categoryId || null, uomId || null, quantity, unitPrice, lowStockThreshold]
       );
-      
-      // Get the full material data with joined information
-      const [rows] = await pool.execute(`
-        SELECT m.*, c.name as categoryName, u.name as uomName, u.symbol as uomSymbol 
-        FROM materials m 
-        LEFT JOIN categories c ON m.categoryId = c.id 
-        LEFT JOIN unit_of_measures u ON m.uomId = u.id 
-        WHERE m.id = ?
-      `, [result.insertId]);
-      
-      console.log('Created material result:', rows[0]);
-      return rows[0];
+      console.log('Material.create inserted with ID:', result.insertId);
+      return { id: result.insertId, ...materialData };
     } catch (error) {
+      console.error('Error in Material.create:', error);
+      console.error('Error code:', error.code);
+      console.error('Error errno:', error.errno);
+      console.error('Error sqlState:', error.sqlState);
+      console.error('Error sqlMessage:', error.sqlMessage);
       throw error;
     }
   }
 
   static async update(id, materialData) {
-    console.log('Updating material', id, 'with data:', materialData);
     const { name, unit, categoryId, uomId, quantity, unitPrice, lowStockThreshold } = materialData;
     
     // Build dynamic query based on provided fields
@@ -103,72 +129,125 @@ class Material {
     values.push(id); // Add id for WHERE clause
     
     try {
+      console.log('Executing Material.update for ID:', id, 'with fields:', fields, 'and values:', values);
       await pool.execute(
         `UPDATE materials SET ${fields.join(', ')} WHERE id = ?`,
         values
       );
-      
-      // Get the full material data with joined information
-      const [rows] = await pool.execute(`
-        SELECT m.*, c.name as categoryName, u.name as uomName, u.symbol as uomSymbol 
-        FROM materials m 
-        LEFT JOIN categories c ON m.categoryId = c.id 
-        LEFT JOIN unit_of_measures u ON m.uomId = u.id 
-        WHERE m.id = ?
-      `, [id]);
-      
-      console.log('Updated material result:', rows[0]);
-      return rows[0];
+      console.log('Material.update completed for ID:', id);
+      return { id, ...materialData };
     } catch (error) {
+      console.error('Error in Material.update:', error);
+      console.error('Error code:', error.code);
+      console.error('Error errno:', error.errno);
+      console.error('Error sqlState:', error.sqlState);
+      console.error('Error sqlMessage:', error.sqlMessage);
       throw error;
     }
   }
 
   static async updateQuantity(id, quantity) {
     try {
+      console.log('Executing Material.updateQuantity for ID:', id, 'with quantity:', quantity);
       await pool.execute(
         'UPDATE materials SET quantity = ? WHERE id = ?',
         [quantity, id]
       );
+      console.log('Material.updateQuantity completed for ID:', id);
       return { id, quantity };
     } catch (error) {
+      console.error('Error in Material.updateQuantity:', error);
+      console.error('Error code:', error.code);
+      console.error('Error errno:', error.errno);
+      console.error('Error sqlState:', error.sqlState);
+      console.error('Error sqlMessage:', error.sqlMessage);
       throw error;
     }
   }
 
   static async getLowStockItems() {
     try {
-      const [rows] = await pool.execute(`
+      console.log('Executing Material.getLowStockItems query...');
+      const query = `
         SELECT m.*, c.name as categoryName, u.name as uomName, u.symbol as uomSymbol 
         FROM materials m 
         LEFT JOIN categories c ON m.categoryId = c.id 
         LEFT JOIN unit_of_measures u ON m.uomId = u.id 
         WHERE m.quantity <= m.lowStockThreshold
-      `);
+      `;
+      console.log('Query:', query);
+      const [rows] = await pool.execute(query);
+      console.log('Material.getLowStockItems query returned', rows.length, 'rows');
       return rows;
     } catch (error) {
-      throw error;
+      console.error('Error in Material.getLowStockItems:', error);
+      console.error('Error code:', error.code);
+      console.error('Error errno:', error.errno);
+      console.error('Error sqlState:', error.sqlState);
+      console.error('Error sqlMessage:', error.sqlMessage);
+      
+      // Try a simpler query as fallback
+      try {
+        console.log('Trying fallback query without joins...');
+        const [rows] = await pool.execute('SELECT * FROM materials WHERE quantity <= lowStockThreshold');
+        console.log('Fallback query returned', rows.length, 'rows');
+        return rows.map(row => ({
+          ...row,
+          categoryName: null,
+          uomName: null,
+          uomSymbol: null
+        }));
+      } catch (fallbackError) {
+        console.error('Fallback query also failed:', fallbackError);
+        throw fallbackError;
+      }
     }
   }
 
   static async delete(id) {
     try {
+      console.log('Executing Material.delete for ID:', id);
       const [result] = await pool.execute(
         'DELETE FROM materials WHERE id = ?',
         [id]
       );
+      console.log('Material.delete affected', result.affectedRows, 'rows');
       return result.affectedRows > 0;
     } catch (error) {
+      console.error('Error in Material.delete:', error);
+      console.error('Error code:', error.code);
+      console.error('Error errno:', error.errno);
+      console.error('Error sqlState:', error.sqlState);
+      console.error('Error sqlMessage:', error.sqlMessage);
       throw error;
     }
   }
 
   static async deleteAll() {
+    const connection = await pool.getConnection();
+    
     try {
-      const [result] = await pool.execute('DELETE FROM materials');
+      await connection.beginTransaction();
+      
+      // Delete related records first to avoid foreign key constraint violations
+      await connection.execute('DELETE FROM recipe_ingredients');
+      await connection.execute('DELETE FROM purchase_order_items');
+      
+      // Now delete all materials
+      const [result] = await connection.execute('DELETE FROM materials');
+      
+      await connection.commit();
       return result.affectedRows;
     } catch (error) {
+      await connection.rollback();
+      console.error('Error in Material.deleteAll:', error);
+      console.error('Error code:', error.code);
+      console.error('Error errno:', error.errno);
+      console.error('Error sqlState:', error.sqlState);
+      console.error('Error sqlMessage:', error.sqlMessage);
       throw error;
+    } finally {
+      connection.release();
     }
   }
 }
