@@ -39,11 +39,14 @@ const createMaterial = async (req, res) => {
     }
     
     const material = await Material.create({
-      name, unit, quantity, unitPrice,
-    lowStockThreshold: parseFloat(lowStockThreshold),
-    categoryId: categoryId || null,
-    uomId: uomId || null
-  });
+      name,
+      unit: null,
+      quantity: 0,
+      unitPrice: 0,
+      lowStockThreshold: parseFloat(lowStockThreshold),
+      categoryId: categoryId || null,
+      uomId: uomId || null
+    });
     
     console.log('Created material:', material);
     res.status(201).json({ message: 'Material added successfully', material });

@@ -146,7 +146,7 @@ async function initDatabase() {
         id INT AUTO_INCREMENT PRIMARY KEY,
         itemCode VARCHAR(100) NULL UNIQUE,
         name VARCHAR(255) NOT NULL,
-        unit VARCHAR(50) NOT NULL,
+        unit VARCHAR(50) NULL,
         quantity DECIMAL(10,2) NOT NULL DEFAULT 0,
         unitPrice DECIMAL(10,2) NOT NULL DEFAULT 0,
         lowStockThreshold DECIMAL(10,2) NOT NULL DEFAULT 0,
