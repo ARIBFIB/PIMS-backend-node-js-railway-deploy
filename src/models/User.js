@@ -197,6 +197,26 @@ class User {
       throw error;
     }
   }
+  
+  // Check if user has a specific permission
+  static async hasPermission(userId, permissionName) {
+    try {
+      const permissions = await this.getPermissions(userId);
+      return permissions.includes(permissionName);
+    } catch (error) {
+      throw error;
+    }
+  }
+  
+  // Check if user is admin
+  static async isAdmin(userId) {
+    try {
+      const user = await this.findById(userId);
+      return user && user.role === 'admin';
+    } catch (error) {
+      throw error;
+    }
+  }
 }
 
 module.exports = User;
