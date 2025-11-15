@@ -9,7 +9,8 @@
     "setup-db": "node setup-database.js",
     "init-db": "node init-db.js",
     "test": "node tests/api.test.js",
-    "railway-setup": "node scripts/railway-setup.js"
+    "railway-setup": "node scripts/railway-setup.js",
+    "migrate-remove-unit-price": "node src/migrations/remove-unit-price-column.js"
   },
   "keywords": [],
   "author": "",
