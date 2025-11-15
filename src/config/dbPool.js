@@ -9,7 +9,12 @@ const dbConfig = {
   database: process.env.MYSQLDATABASE || process.env.DB_NAME || "admin_pims",
   waitForConnections: true,
   connectionLimit: 10,
-  queueLimit: 0
+  queueLimit: 0,
+  // Add these options for better Railway compatibility
+  acquireTimeout: 60000,
+  timeout: 60000,
+  reconnect: true,
+  charset: 'utf8mb4'
 };
 
 console.log('Database configuration:', {
@@ -22,24 +27,33 @@ console.log('Database configuration:', {
 // Create connection pool
 const pool = mysql.createPool(dbConfig);
 
-// Test the pool connection
-pool.getConnection()
-  .then(connection => {
-    console.log('✅ Database pool connection successful');
-    // Test a simple query
-    connection.query('SELECT 1+1 AS solution')
-      .then(([rows]) => {
-        console.log('✅ Database query test successful:', rows[0].solution);
-        connection.release();
-      })
-      .catch(error => {
-        console.error('❌ Database query test failed:', error.message);
-        connection.release();
-      });
-  })
-  .catch(error => {
-    console.error('❌ Database pool connection failed:', error.message);
-  });
+// Test the pool connection with retry mechanism
+const testConnectionWithRetry = async (retries = 3) => {
+  for (let i = 0; i < retries; i++) {
+    try {
+      const connection = await pool.getConnection();
+      console.log('✅ Database pool connection successful');
+      
+      // Test a simple query
+      const [rows] = await connection.query('SELECT 1+1 AS solution');
+      console.log('✅ Database query test successful:', rows[0].solution);
+      
+      connection.release();
+      return true;
+    } catch (error) {
+      console.error(`❌ Database connection attempt ${i + 1} failed:`, error.message);
+      if (i === retries - 1) {
+        console.error('❌ All connection attempts failed');
+        return false;
+      }
+      // Wait before retrying
+      await new Promise(resolve => setTimeout(resolve, 2000));
+    }
+  }
+};
+
+// Test connection with retry
+testConnectionWithRetry();
 
 // Add event listeners for debugging
 pool.on('connection', (connection) => {

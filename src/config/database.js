@@ -3,13 +3,16 @@ const mysql = require("mysql2/promise");
 
 // Database configuration (supports Railway & local)
 const dbConfig = {
-  host: process.env.DB_HOST || process.env.MYSQLHOST || "localhost",
-  port: process.env.DB_PORT || process.env.MYSQLPORT || 3306,
-  user: process.env.DB_USER || process.env.MYSQLUSER || "root",
-  password: process.env.DB_PASSWORD || process.env.MYSQLPASSWORD || "",
-  database: process.env.DB_NAME || process.env.MYSQLDATABASE || "admin_pims",
+  host: process.env.MYSQLHOST || process.env.DB_HOST || "localhost",
+  port: process.env.MYSQLPORT || process.env.DB_PORT || 3306,
+  user: process.env.MYSQLUSER || process.env.DB_USER || "root",
+  password: process.env.MYSQLPASSWORD || process.env.DB_PASSWORD || "",
+  database: process.env.MYSQLDATABASE || process.env.DB_NAME || "admin_pims",
   multipleStatements: true,
   connectTimeout: 20000,
+  acquireTimeout: 60000,
+  timeout: 60000,
+  charset: 'utf8mb4'
 };
 
 // Create connection pool
@@ -279,21 +282,30 @@ async function initDatabase() {
   }
 }
 
-// Test database connection function
+// Test database connection function with retry
 async function testConnection() {
   let connection;
+  let retries = 3;
   
-  try {
-    console.log("🚀 Testing database connection...");
-    connection = await mysql.createConnection(dbConfig);
-    console.log("✅ Database connection successful");
-    await connection.end();
-    return true;
-  } catch (err) {
-    console.error("❌ Database connection failed:", err.message);
-    if (connection) await connection.end();
-    return false;
+  while (retries > 0) {
+    try {
+      console.log("🚀 Testing database connection...");
+      connection = await mysql.createConnection(dbConfig);
+      console.log("✅ Database connection successful");
+      await connection.end();
+      return true;
+    } catch (err) {
+      console.error(`❌ Database connection failed: ${err.message}`);
+      if (connection) await connection.end();
+      retries--;
+      if (retries > 0) {
+        console.log(`Retrying in 3 seconds... (${retries} attempts left)`);
+        await new Promise(resolve => setTimeout(resolve, 3000));
+      }
+    }
   }
+  
+  return false;
 }
 
 module.exports = { initDatabase, testConnection, pool };

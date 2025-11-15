@@ -31,9 +31,7 @@ app.set('trust proxy', 1);
 // Configure CORS with specific options
 const corsOptions = {
   origin: [
-    'https://funny-melba-61fb3d.netlify.app', // Your new Netlify frontend
-    'https://inquisitive-cannoli-1a02dc.netlify.app',
-    'https://69103f69dcfd481c4c5af487--inquisitive-cannoli-1a02dc.netlify.app',
+    'https://pims-project-61fb3d.netlify.app',
     'http://localhost:3000',
     'http://127.0.0.1:3000',
     'http://localhost:5173',
@@ -42,7 +40,6 @@ const corsOptions = {
     'http://127.0.0.1:5500',
     'http://localhost:8080',
     'http://127.0.0.1:8080',
-    'https://pims-project-61fb3d.netlify.app'
   ],
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
