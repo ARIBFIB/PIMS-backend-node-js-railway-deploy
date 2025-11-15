@@ -300,7 +300,8 @@ async function initDatabase() {
         ('create_users', 'Create users'),
         ('edit_users', 'Edit users'),
         ('delete_users', 'Delete users'),
-        ('manage_roles', 'Manage roles and permissions');
+        ('manage_roles', 'Manage roles and permissions'),
+        ('view_permissions', 'View permissions');
       `);
 
       // Assign all permissions to admin role
