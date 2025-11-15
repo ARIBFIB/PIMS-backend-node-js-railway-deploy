@@ -385,21 +385,30 @@ async function initDatabase() {
   }
 }
 
-// Test database connection function
+// Test database connection function with retry
 async function testConnection() {
   let connection;
+  let retries = 3;
   
-  try {
-    console.log("🚀 Testing database connection...");
-    connection = await mysql.createConnection(dbConfig);
-    console.log("✅ Database connection successful");
-    await connection.end();
-    return true;
-  } catch (err) {
-    console.error("❌ Database connection failed:", err.message);
-    if (connection) await connection.end();
-    return false;
+  while (retries > 0) {
+    try {
+      console.log("🚀 Testing database connection...");
+      connection = await mysql.createConnection(dbConfig);
+      console.log("✅ Database connection successful");
+      await connection.end();
+      return true;
+    } catch (err) {
+      console.error(`❌ Database connection failed: ${err.message}`);
+      if (connection) await connection.end();
+      retries--;
+      if (retries > 0) {
+        console.log(`Retrying in 3 seconds... (${retries} attempts left)`);
+        await new Promise(resolve => setTimeout(resolve, 3000));
+      }
+    }
   }
+  
+  return false;
 }
 
 module.exports = { initDatabase, testConnection, pool };
