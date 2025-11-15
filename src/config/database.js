@@ -128,7 +128,7 @@ async function initDatabase() {
     `);
 
     // USERS (Modified to include roleId)
-    await connection.query(`
+    await connection.query(` 
       CREATE TABLE IF NOT EXISTS users (
         id INT AUTO_INCREMENT PRIMARY KEY,
         name VARCHAR(255) NOT NULL,
