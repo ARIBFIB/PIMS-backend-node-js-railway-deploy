@@ -31,7 +31,7 @@ app.set('trust proxy', 1);
 // Configure CORS with specific options
 const corsOptions = {
   origin: [
-    'https://pims-project-214e1e.netlify.app/',
+    'https://pims-project-214e1e.netlify.app',
     'https://pims-project-61fb3d.netlify.app',
     'http://localhost:3000',
     'http://127.0.0.1:3000',
@@ -52,17 +52,7 @@ const corsOptions = {
 app.use(cors(corsOptions));
 
 // Handle preflight requests explicitly
-app.use((req, res, next) => {
-  // Handle preflight requests
-  if (req.method === 'OPTIONS') {
-    res.header('Access-Control-Allow-Origin', req.header('origin') || '*');
-    res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, PATCH, OPTIONS');
-    res.header('Access-Control-Allow-Headers', 'Content-Type, Authorization');
-    res.header('Access-Control-Allow-Credentials', 'true');
-    return res.status(200).end();
-  }
-  next();
-});
+app.options('*', cors(corsOptions)); // Handle all OPTIONS requests with CORS
 
 // Rate limiting with more appropriate configuration for a dashboard application
 const limiter = rateLimit({
