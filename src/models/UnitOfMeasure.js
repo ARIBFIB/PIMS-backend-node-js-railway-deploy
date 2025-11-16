@@ -57,8 +57,6 @@ class UnitOfMeasure {
       await connection.beginTransaction();
       
       // Delete related records first to avoid foreign key constraint violations
-      await connection.execute('DELETE FROM recipe_ingredients WHERE uomId = ?', [id]);
-      await connection.execute('DELETE FROM purchase_order_items WHERE uomId = ?', [id]);
       await connection.execute('DELETE FROM materials WHERE uomId = ?', [id]);
       
       // Now delete the unit_of_measures
@@ -85,8 +83,6 @@ class UnitOfMeasure {
       await connection.beginTransaction();
       
       // Delete related records first to avoid foreign key constraint violations
-      await connection.execute('DELETE FROM recipe_ingredients WHERE uomId IS NOT NULL');
-      await connection.execute('DELETE FROM purchase_order_items WHERE uomId IS NOT NULL');
       await connection.execute('DELETE FROM materials WHERE uomId IS NOT NULL');
       
       // Now delete all unit_of_measures
