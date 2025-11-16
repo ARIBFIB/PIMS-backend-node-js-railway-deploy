@@ -2,7 +2,7 @@ const Recipe = require('../models/Recipe');
 
 const getAllRecipes = async (req, res) => {
   try {
-    const recipes = await Recipe.getAll();
+    const recipe = await Recipe.getAll();
     res.json(recipes);
   } catch (error) {
     console.error('Get recipes error:', error);
@@ -28,7 +28,7 @@ const getRecipeById = async (req, res) => {
 
 const createRecipe = async (req, res) => {
   try {
-    const { name, category, ingredients } = req.body;
+    const { name, category, recipeUnit, ingredients } = req.body;
     
     // Validate input
     if (!name || !category || !ingredients || ingredients.length === 0) {
@@ -38,6 +38,7 @@ const createRecipe = async (req, res) => {
     const recipe = await Recipe.create({
       name,
       category,
+      recipeUnit,
       ingredients
     });
     
@@ -51,7 +52,7 @@ const createRecipe = async (req, res) => {
 const updateRecipe = async (req, res) => {
   try {
     const { id } = req.params;
-    const { name, category, ingredients } = req.body;
+    const { name, category, recipeUnit, ingredients } = req.body;
     
     // Validate input
     if (!name || !category || !ingredients || ingredients.length === 0) {
@@ -61,6 +62,7 @@ const updateRecipe = async (req, res) => {
     const recipe = await Recipe.update(id, {
       name,
       category,
+      recipeUnit,
       ingredients
     });
     

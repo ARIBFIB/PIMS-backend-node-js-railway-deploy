@@ -67,7 +67,7 @@ class Recipe {
   }
 
   static async create(recipeData) {
-    const { name, category, categoryId, ingredients } = recipeData;
+    const { name, category, categoryId, recipeUnit, ingredients } = recipeData;
     const connection = await pool.getConnection();
     
     try {
@@ -76,10 +76,11 @@ class Recipe {
       // Handle undefined values properly
       const categoryName = category !== undefined ? category : null;
       const categoryIdValue = categoryId !== undefined ? categoryId : null;
+      const recipeUnitValue = recipeUnit || 'unit';
       
       const [recipeResult] = await connection.execute(
-        'INSERT INTO recipes (name, category, categoryId) VALUES (?, ?, ?)',
-        [name, categoryName, categoryIdValue]
+        'INSERT INTO recipes (name, category, categoryId, recipeUnit) VALUES (?, ?, ?, ?)',
+        [name, categoryName, categoryIdValue, recipeUnitValue]
       );
       
       const recipeId = recipeResult.insertId;
@@ -92,7 +93,7 @@ class Recipe {
       }
       
       await connection.commit();
-      return { id: recipeId, name, category: categoryName, categoryId: categoryIdValue };
+      return { id: recipeId, name, category: categoryName, categoryId: categoryIdValue, recipeUnit: recipeUnitValue };
     } catch (error) {
       await connection.rollback();
       throw error;
@@ -102,7 +103,7 @@ class Recipe {
   }
 
   static async update(id, recipeData) {
-    const { name, category, categoryId, ingredients } = recipeData;
+    const { name, category, categoryId, recipeUnit, ingredients } = recipeData;
     const connection = await pool.getConnection();
     
     try {
@@ -111,10 +112,11 @@ class Recipe {
       // Handle undefined values properly
       const categoryName = category !== undefined ? category : null;
       const categoryIdValue = categoryId !== undefined ? categoryId : null;
+      const recipeUnitValue = recipeUnit || 'unit';
       
       await connection.execute(
-        'UPDATE recipes SET name = ?, category = ?, categoryId = ? WHERE id = ?',
-        [name, categoryName, categoryIdValue, id]
+        'UPDATE recipes SET name = ?, category = ?, categoryId = ?, recipeUnit = ? WHERE id = ?',
+        [name, categoryName, categoryIdValue, recipeUnitValue, id]
       );
       
       await connection.execute(
@@ -130,7 +132,7 @@ class Recipe {
       }
       
       await connection.commit();
-      return { id, name, category: categoryName, categoryId: categoryIdValue };
+      return { id, name, category: categoryName, categoryId: categoryIdValue, recipeUnit: recipeUnitValue };
     } catch (error) {
       await connection.rollback();
       throw error;
