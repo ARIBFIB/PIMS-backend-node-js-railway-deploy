@@ -26,7 +26,7 @@ const getInventoryReport = async (req, res) => {
     // Add status to each material
     const materialsWithStatus = materials.map(material => ({
       ...material,
-      status: material.quantity <= material.lowStockThreshold ? 'LOW_STOCK' : 'NORMAL'
+      status: material.quantity <= material.lowStockThreshold ? 'LOW STOCK' : 'Normal'
     }));
     
     res.json(materialsWithStatus);
@@ -39,7 +39,14 @@ const getInventoryReport = async (req, res) => {
 const getLowStockReport = async (req, res) => {
   try {
     const materials = await Material.getLowStockItems();
-    res.json(materials);
+    
+    // Add status to each material
+    const materialsWithStatus = materials.map(material => ({
+      ...material,
+      status: material.quantity <= material.lowStockThreshold ? 'LOW STOCK' : 'Normal'
+    }));
+    
+    res.json(materialsWithStatus);
   } catch (error) {
     console.error('Get low stock report error:', error);
     res.status(500).json({ message: 'Internal server error' });
