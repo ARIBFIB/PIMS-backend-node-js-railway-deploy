@@ -33,6 +33,7 @@ const corsOptions = {
   origin: [
     'https://pims-project-214e1e.netlify.app',
     'https://pims-project-61fb3d.netlify.app',
+    'https://pims-backend-node-js-railway-deploy-production-f9dc.up.railway.app', // Added Railway domain
     'http://localhost:3000',
     'http://127.0.0.1:3000',
     'http://localhost:5173',
