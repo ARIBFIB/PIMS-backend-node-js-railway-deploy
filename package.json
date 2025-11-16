@@ -10,6 +10,7 @@
     "init-db": "node init-db.js",
     "test": "node tests/api.test.js",
     "railway-setup": "node scripts/railway-setup.js",
+    "railway-post-deploy": "node scripts/railway-post-deploy.js",
     "migrate-remove-unit-price": "node src/migrations/remove-unit-price-column.js",
     "migrate-recipe-unit": "node scripts/migrate-recipe-unit.js",
     "add-recipe-unit-column": "node scripts/add-recipe-unit-column.js"

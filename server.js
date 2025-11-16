@@ -4,6 +4,9 @@ const { initDatabase, testConnection } = require('./src/config/database');
 const { pool } = require('./src/config/dbPool');
 const bcrypt = require('bcryptjs');
 
+// Import the Railway post-deploy script
+const runRailwayPostDeploy = require('./scripts/railway-post-deploy');
+
 const PORT = process.env.PORT || 4000;
 
 // Initialize database before starting server
@@ -19,6 +22,15 @@ async function startServer() {
       
       // Fix admin password if it's plain text
       await fixAdminPasswordIfNecessary();
+      
+      // Run Railway post-deploy script (for Railway deployments)
+      if (process.env.MYSQLDATABASE) {
+        try {
+          await runRailwayPostDeploy();
+        } catch (err) {
+          console.error('⚠️  Railway post-deploy script failed:', err.message);
+        }
+      }
     } else {
       console.warn('⚠️  Database connection failed. Starting server without database initialization.');
       console.warn('This is normal for Railway deployments where the database may not be ready yet.');
@@ -38,6 +50,15 @@ async function startServer() {
             
             // Fix admin password if it's plain text
             await fixAdminPasswordIfNecessary();
+            
+            // Run Railway post-deploy script (for Railway deployments)
+            if (process.env.MYSQLDATABASE) {
+              try {
+                await runRailwayPostDeploy();
+              } catch (err) {
+                console.error('⚠️  Railway post-deploy script failed:', err.message);
+              }
+            }
           } catch (err) {
             console.error('❌ Database initialization failed on retry:', err.message);
           }

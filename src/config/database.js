@@ -172,6 +172,7 @@ async function initDatabase() {
         FOREIGN KEY (categoryId) REFERENCES categories(id)
       );
     `);
+    
 
     // RECIPE INGREDIENTS
     await connection.query(`
