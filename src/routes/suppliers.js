@@ -8,7 +8,7 @@ const router = express.Router();
 // ✅ Get all suppliers
 router.get('/', authenticate, supplierController.getAllSuppliers);
 
-// ✅ Get supplier by ID
+// ✅ Get supplier  by ID
 router.get('/:id', authenticate, supplierController.getSupplierById);
 
 // ✅ Create new supplier
