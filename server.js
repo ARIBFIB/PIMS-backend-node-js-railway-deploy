@@ -1,6 +1,7 @@
 require('dotenv').config();
 console.log('🚀 Application starting...');
 
+const express = require('express');
 const app = require('./src/app');
 const { initDatabase, testConnection } = require('./src/config/database');
 const pool = require('./src/config/dbPool');
@@ -13,6 +14,12 @@ const PORT = parseInt(process.env.PORT) || 4000;
 
 // Add a flag to track if the server is ready
 let isServerReady = false;
+
+// Add an immediate health check endpoint that doesn't depend on anything
+app.get('/ping', (req, res) => {
+  console.log('Immediate ping endpoint called');
+  res.status(200).json({ status: 'OK', message: 'Server is responding', timestamp: new Date().toISOString() });
+});
 
 console.log('Environment variables:');
 console.log('- PORT:', process.env.PORT);
@@ -83,7 +90,7 @@ async function fixAdminPasswordIfNecessary() {
       ['admin@example.com']
     );
     
-    if (rows.length > 0) {
+    if (rows && rows.length > 0) {
       const user = rows[0];
       // Check if password is plain text (not a bcrypt hash)
       if (!user.password.startsWith('$2b$')) {
@@ -113,44 +120,49 @@ async function fixAdminPasswordIfNecessary() {
 // Add a simple startup message
 console.log(`🚀 Attempting to start server on port ${PORT}...`);
 
-// Try different binding approaches for better compatibility
-const server = app.listen(PORT, () => {
-  console.log(`🚀 Server successfully running on port ${PORT}`);
-  console.log(`CORS enabled for all origins`);
-  
-  // Mark server as ready immediately
-  isServerReady = true;
-  console.log(`✅ Server is ready to accept requests`);
-  
-  // Initialize database asynchronously after server starts
-  setTimeout(async () => {
-    await initializeDatabaseAsync();
-  }, 1000);
-});
+// Start the server immediately with error handling
+try {
+  const server = app.listen(PORT, () => {
+    console.log(`🚀 Server successfully running on port ${PORT}`);
+    console.log(`CORS enabled for all origins`);
+    
+    // Mark server as ready immediately
+    isServerReady = true;
+    console.log(`✅ Server is ready to accept requests`);
+    
+    // Initialize database asynchronously after server starts
+    setTimeout(async () => {
+      await initializeDatabaseAsync();
+    }, 1000);
+  });
 
-// Add error handler for the server
-server.on('error', (error) => {
-  console.error('❌ Server error:', error);
-  if (error.syscall !== 'listen') {
-    throw error;
-  }
-
-  const bind = typeof PORT === 'string'
-    ? 'Pipe ' + PORT
-    : 'Port ' + PORT;
-
-  switch (error.code) {
-    case 'EACCES':
-      console.error(bind + ' requires elevated privileges');
-      process.exit(1);
-      break;
-    case 'EADDRINUSE':
-      console.error(bind + ' is already in use');
-      process.exit(1);
-      break;
-    default:
+  // Add error handler for the server
+  server.on('error', (error) => {
+    console.error('❌ Server error:', error);
+    if (error.syscall !== 'listen') {
       throw error;
-  }
-});
+    }
+
+    const bind = typeof PORT === 'string'
+      ? 'Pipe ' + PORT
+      : 'Port ' + PORT;
+
+    switch (error.code) {
+      case 'EACCES':
+        console.error(bind + ' requires elevated privileges');
+        process.exit(1);
+        break;
+      case 'EADDRINUSE':
+        console.error(bind + ' is already in use');
+        process.exit(1);
+        break;
+      default:
+        throw error;
+    }
+  });
+} catch (error) {
+  console.error('❌ Failed to start server:', error);
+  process.exit(1);
+}
 
 console.log('✅ Server startup process initiated');

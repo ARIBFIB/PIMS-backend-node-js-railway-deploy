@@ -382,10 +382,12 @@ async function initDatabase() {
       await new Promise(resolve => setTimeout(resolve, 100));
 
       // Debug: Check if itemCode column exists
+      let itemCodeExists = false;
       try {
         const [columns] = await connection.query("SHOW COLUMNS FROM materials LIKE 'itemCode'");
         console.log("itemCode column check:", columns);
-        if (columns.length === 0) {
+        itemCodeExists = columns.length > 0;
+        if (!itemCodeExists) {
           console.log("⚠️  itemCode column does not exist in materials table");
         } else {
           console.log("✅ itemCode column exists in materials table");
@@ -394,16 +396,31 @@ async function initDatabase() {
         console.log("⚠️  Error checking itemCode column:", columnCheckError.message);
       }
 
-      await connection.query(`
-        INSERT INTO materials (itemCode, name, unit, quantity, unitPrice, lowStockThreshold, categoryId, uomId) VALUES
-        ('F001', 'Flour', 'kg', 200, 120, 50, (SELECT id FROM categories WHERE code = '001'), (SELECT id FROM unit_of_measures WHERE symbol = 'kg' LIMIT 1)),
-        ('S001', 'Sugar', 'kg', 100, 140, 30, (SELECT id FROM categories WHERE code = '001'), (SELECT id FROM unit_of_measures WHERE symbol = 'kg' LIMIT 1)),
-        ('SL01', 'Salt', 'kg', 50, 20, 10, (SELECT id FROM categories WHERE code = '001'), (SELECT id FROM unit_of_measures WHERE symbol = 'kg' LIMIT 1)),
-        ('O001', 'Oil', 'l', 30, 150, 5, (SELECT id FROM categories WHERE code = '001'), (SELECT id FROM unit_of_measures WHERE symbol = 'l' LIMIT 1)),
-        ('Y001', 'Yeast', 'g', 500, 0.5, 100, (SELECT id FROM categories WHERE code = '001'), (SELECT id FROM unit_of_measures WHERE symbol = 'g' LIMIT 1))
-        ON DUPLICATE KEY UPDATE name = name;
-      `);
-      console.log("✅ Sample materials inserted");
+      // Only insert materials with itemCode if the column exists
+      if (itemCodeExists) {
+        await connection.query(`
+          INSERT INTO materials (itemCode, name, unit, quantity, unitPrice, lowStockThreshold, categoryId, uomId) VALUES
+          ('F001', 'Flour', 'kg', 200, 120, 50, (SELECT id FROM categories WHERE code = '001'), (SELECT id FROM unit_of_measures WHERE symbol = 'kg' LIMIT 1)),
+          ('S001', 'Sugar', 'kg', 100, 140, 30, (SELECT id FROM categories WHERE code = '001'), (SELECT id FROM unit_of_measures WHERE symbol = 'kg' LIMIT 1)),
+          ('SL01', 'Salt', 'kg', 50, 20, 10, (SELECT id FROM categories WHERE code = '001'), (SELECT id FROM unit_of_measures WHERE symbol = 'kg' LIMIT 1)),
+          ('O001', 'Oil', 'l', 30, 150, 5, (SELECT id FROM categories WHERE code = '001'), (SELECT id FROM unit_of_measures WHERE symbol = 'l' LIMIT 1)),
+          ('Y001', 'Yeast', 'g', 500, 0.5, 100, (SELECT id FROM categories WHERE code = '001'), (SELECT id FROM unit_of_measures WHERE symbol = 'g' LIMIT 1))
+          ON DUPLICATE KEY UPDATE name = name;
+        `);
+        console.log("✅ Sample materials inserted");
+      } else {
+        // Insert materials without itemCode column
+        await connection.query(`
+          INSERT INTO materials (name, unit, quantity, unitPrice, lowStockThreshold, categoryId, uomId) VALUES
+          ('Flour', 'kg', 200, 120, 50, (SELECT id FROM categories WHERE code = '001'), (SELECT id FROM unit_of_measures WHERE symbol = 'kg' LIMIT 1)),
+          ('Sugar', 'kg', 100, 140, 30, (SELECT id FROM categories WHERE code = '001'), (SELECT id FROM unit_of_measures WHERE symbol = 'kg' LIMIT 1)),
+          ('Salt', 'kg', 50, 20, 10, (SELECT id FROM categories WHERE code = '001'), (SELECT id FROM unit_of_measures WHERE symbol = 'kg' LIMIT 1)),
+          ('Oil', 'l', 30, 150, 5, (SELECT id FROM categories WHERE code = '001'), (SELECT id FROM unit_of_measures WHERE symbol = 'l' LIMIT 1)),
+          ('Yeast', 'g', 500, 0.5, 100, (SELECT id FROM categories WHERE code = '001'), (SELECT id FROM unit_of_measures WHERE symbol = 'g' LIMIT 1))
+          ON DUPLICATE KEY UPDATE name = name;
+        `);
+        console.log("✅ Sample materials inserted (without itemCode)");
+      }
 
       await connection.query(`
         INSERT INTO recipes (name, category, categoryId)

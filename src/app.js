@@ -1,4 +1,12 @@
 const express = require('express');
+const app = express();
+
+// Add an immediate health check endpoint at the very beginning
+app.get('/ping', (req, res) => {
+  console.log('Immediate ping endpoint called');
+  res.status(200).json({ status: 'OK', message: 'Server is responding', timestamp: new Date().toISOString() });
+});
+
 const cors = require('cors');
 const helmet = require('helmet');
 const morgan = require('morgan');
@@ -23,13 +31,6 @@ const reportRoutes = require('./routes/reports');
 
 // Error handling middleware
 const errorHandler = require('./middleware/errorHandler');
-
-const app = express();
-
-// Add an immediate health check endpoint at the very beginning
-app.get('/ping', (req, res) => {
-  res.status(200).json({ status: 'OK', message: 'Server is responding' });
-});
 
 // Trust proxy for rate limiting
 app.set('trust proxy', 1);
