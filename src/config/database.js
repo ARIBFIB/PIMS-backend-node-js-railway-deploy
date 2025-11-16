@@ -330,11 +330,15 @@ async function initDatabase() {
       `);
 
       // // Insert default unit of measures
-      // Delete all unit_of_measures data
-      await connection.query('DELETE FROM unit_of_measures');
-      
-      // Optional: Reset auto-increment counter
-      // await connection.query('ALTER TABLE unit_of_measures AUTO_INCREMENT = 1');
+      // await connection.query(`
+      //   INSERT IGNORE INTO unit_of_measures (name, symbol) VALUES 
+      //   ('Kilogram', 'kg'),
+      //   ('Gram', 'g'),
+      //   ('Liter', 'l'),
+      //   ('Milliliter', 'ml'),
+      //   ('Piece', 'pc'),
+      //   ('Box', 'box');
+      // `);
 
       await connection.query(`
         INSERT INTO materials (itemCode, name, unit, quantity, unitPrice, lowStockThreshold, categoryId, uomId) VALUES
