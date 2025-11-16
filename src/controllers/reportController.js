@@ -40,10 +40,10 @@ const getLowStockReport = async (req, res) => {
   try {
     const materials = await Material.getLowStockItems();
     
-    // Add status to each material
+    // Add status to each material - all items in low stock report should be LOW STOCK
     const materialsWithStatus = materials.map(material => ({
       ...material,
-      status: material.quantity <= material.lowStockThreshold ? 'LOW STOCK' : 'Normal'
+      status: 'LOW STOCK'
     }));
     
     res.json(materialsWithStatus);
