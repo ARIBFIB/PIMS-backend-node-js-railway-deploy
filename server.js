@@ -7,7 +7,7 @@ const bcrypt = require('bcryptjs');
 // Import the Railway post-deploy script
 const runRailwayPostDeploy = require('./scripts/railway-post-deploy');
 
-const PORT = process.env.PORT || 4000;
+const PORT = parseInt(process.env.PORT) || 4000;
 
 // Initialize database before starting server
 async function startServer() {

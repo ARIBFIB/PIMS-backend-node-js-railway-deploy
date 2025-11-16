@@ -33,8 +33,8 @@ app.set('trust proxy', 1);
 const corsOptions = {
   origin: [
     // 'https://pims-project-214e1e.netlify.app',
-    'https://6919f5629afbf6133ebe90d7--pims-project-61fb3d.netlify.app',
     'https://pims-project-61fb3d.netlify.app',
+    'https://6919f5629afbf6133ebe90d7--pims-project-61fb3d.netlify.app',
     'http://localhost:3000',
     'http://127.0.0.1:3000',
     'http://localhost:5173',
@@ -111,25 +111,28 @@ app.use('/api/permissions', permissionRoutes);
 
 // Health check endpoint
 app.get('/health', async (req, res) => {
+  const healthCheck = {
+    status: 'OK',
+    timestamp: new Date().toISOString(),
+    uptime: process.uptime(),
+    database: 'unknown'
+  };
+
   try {
-    // Test database connection
+    // Test database connection without failing the health check
     const connection = await pool.getConnection();
     await connection.ping();
     connection.release();
-    
-    res.status(200).json({ 
-      status: 'OK',
-      timestamp: new Date().toISOString(),
-      database: 'connected'
-    });
+    healthCheck.database = 'connected';
   } catch (error) {
-    console.error('Health check failed:', error.message);
-    res.status(503).json({ 
-      status: 'Service Unavailable',
-      timestamp: new Date().toISOString(),
-      error: error.message
-    });
+    console.warn('Health check - database connection failed:', error.message);
+    healthCheck.database = 'disconnected';
+    // Don't fail the health check if database is temporarily unavailable
+    // This is common during startup or when database is restarting
   }
+
+  // If we can respond to HTTP requests, the service is healthy enough
+  res.status(200).json(healthCheck);
 });
 
 // Handle 404

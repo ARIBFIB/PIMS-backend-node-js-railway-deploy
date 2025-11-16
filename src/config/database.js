@@ -417,4 +417,4 @@ async function testConnection() {
   return false;
 }
 
-module.exports = { initDatabase, testConnection, pool };
+module.exports = { initDatabase, testConnection };
