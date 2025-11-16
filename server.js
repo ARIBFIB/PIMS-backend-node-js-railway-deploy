@@ -11,6 +11,9 @@ const runRailwayPostDeploy = require('./scripts/railway-post-deploy');
 
 const PORT = parseInt(process.env.PORT) || 4000;
 
+// Add a flag to track if the server is ready
+let isServerReady = false;
+
 console.log('Environment variables:');
 console.log('- PORT:', process.env.PORT);
 console.log('- Parsed PORT:', PORT);
@@ -53,7 +56,8 @@ async function startServer() {
       console.log(`🚀 Server running on port ${PORT}`);
       console.log(`CORS enabled for all origins`);
       
-      // Log when the server is ready to accept requests
+      // Mark server as ready
+      isServerReady = true;
       console.log(`✅ Server is ready to accept requests`);
       
       // For Railway deployments, try to initialize database after server starts
@@ -156,5 +160,22 @@ async function fixAdminPasswordIfNecessary() {
     console.error('Error fixing admin password:', error.message);
   }
 }
+
+// Add a readiness check endpoint to the app
+const express = require('express');
+app.get('/ready', (req, res) => {
+  if (isServerReady) {
+    res.status(200).json({ 
+      status: 'READY', 
+      timestamp: new Date().toISOString(),
+      uptime: process.uptime()
+    });
+  } else {
+    res.status(503).json({ 
+      status: 'NOT READY', 
+      timestamp: new Date().toISOString()
+    });
+  }
+});
 
 startServer();
