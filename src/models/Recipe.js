@@ -275,6 +275,8 @@ class Recipe {
           name: ingredient.name,
           quantity: requiredQuantity,
           unit: ingredient.unit,
+          uomName: ingredient.uomName,
+          uomSymbol: ingredient.uomSymbol,
           unitPrice: ingredient.unitPrice,
           totalCost: materialCost,
           availableQuantity: ingredient.availableQuantity,
@@ -370,6 +372,8 @@ class Recipe {
           belowThresholdMaterials.push({
             name: ingredient.name,
             unit: ingredient.unit,
+            uomName: ingredient.uomName,
+            uomSymbol: ingredient.uomSymbol,
             remaining: remainingQuantity,
             threshold: ingredient.lowStockThreshold,
             required: requiredQuantity
