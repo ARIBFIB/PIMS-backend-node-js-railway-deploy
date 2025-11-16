@@ -4,6 +4,9 @@ CREATE DATABASE IF NOT EXISTS admin_pims;
 -- Use the database
 USE admin_pims;
 
+-- Add recipeUnit column to recipes table if it doesn't exist
+ALTER TABLE recipes ADD COLUMN IF NOT EXISTS recipeUnit VARCHAR(50) DEFAULT 'unit';
+
 -- Users table
 CREATE TABLE IF NOT EXISTS users (
   id INT AUTO_INCREMENT PRIMARY KEY,
@@ -246,3 +249,6 @@ SELECT r.id, p.id
 FROM roles r, permissions p 
 WHERE r.name = 'operator' 
 AND p.name IN ('view_materials', 'view_recipes', 'view_production', 'view_purchase_orders', 'view_reports');
+
+-- Add recipeUnit column if it doesn't exist (for backward compatibility)
+ALTER TABLE recipes ADD COLUMN IF NOT EXISTS recipeUnit VARCHAR(50) DEFAULT 'unit';

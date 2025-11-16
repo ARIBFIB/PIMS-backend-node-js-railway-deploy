@@ -3,12 +3,33 @@ const pool = require('../config/dbPool');
 class Recipe {
   static async getAll() {
     try {
-      const [recipeRows] = await pool.execute(`
-        SELECT r.*, c.name as categoryName 
-        FROM recipes r 
-        LEFT JOIN categories c ON r.categoryId = c.id 
-        ORDER BY r.name
-      `);
+      // Try to select all fields including recipeUnit
+      let recipeRows;
+      try {
+        [recipeRows] = await pool.execute(`
+          SELECT r.*, c.name as categoryName 
+          FROM recipes r 
+          LEFT JOIN categories c ON r.categoryId = c.id 
+          ORDER BY r.name
+        `);
+      } catch (error) {
+        // If recipeUnit column doesn't exist, select without it
+        if (error.code === 'ER_BAD_FIELD_ERROR' && error.sqlMessage.includes('recipeUnit')) {
+          [recipeRows] = await pool.execute(`
+            SELECT r.*, c.name as categoryName 
+            FROM recipes r 
+            LEFT JOIN categories c ON r.categoryId = c.id 
+            ORDER BY r.name
+          `);
+          // Add default recipeUnit to each recipe
+          recipeRows = recipeRows.map(recipe => ({
+            ...recipe,
+            recipeUnit: recipe.recipeUnit || 'unit'
+          }));
+        } else {
+          throw error;
+        }
+      }
       
       // Get all ingredients for all recipes
       const [ingredientRows] = await pool.execute(`
@@ -40,12 +61,33 @@ class Recipe {
 
   static async findById(id) {
     try {
-      const [recipeRows] = await pool.execute(`
-        SELECT r.*, c.name as categoryName 
-        FROM recipes r 
-        LEFT JOIN categories c ON r.categoryId = c.id 
-        WHERE r.id = ?
-      `, [id]);
+      // Try to select all fields including recipeUnit
+      let recipeRows;
+      try {
+        [recipeRows] = await pool.execute(`
+          SELECT r.*, c.name as categoryName 
+          FROM recipes r 
+          LEFT JOIN categories c ON r.categoryId = c.id 
+          WHERE r.id = ?
+        `, [id]);
+      } catch (error) {
+        // If recipeUnit column doesn't exist, select without it
+        if (error.code === 'ER_BAD_FIELD_ERROR' && error.sqlMessage.includes('recipeUnit')) {
+          [recipeRows] = await pool.execute(`
+            SELECT r.*, c.name as categoryName 
+            FROM recipes r 
+            LEFT JOIN categories c ON r.categoryId = c.id 
+            WHERE r.id = ?
+          `, [id]);
+          // Add default recipeUnit to each recipe
+          recipeRows = recipeRows.map(recipe => ({
+            ...recipe,
+            recipeUnit: recipe.recipeUnit || 'unit'
+          }));
+        } else {
+          throw error;
+        }
+      }
       
       if (recipeRows.length === 0) return null;
       
@@ -78,10 +120,24 @@ class Recipe {
       const categoryIdValue = categoryId !== undefined ? categoryId : null;
       const recipeUnitValue = recipeUnit || 'unit';
       
-      const [recipeResult] = await connection.execute(
-        'INSERT INTO recipes (name, category, categoryId, recipeUnit) VALUES (?, ?, ?, ?)',
-        [name, categoryName, categoryIdValue, recipeUnitValue]
-      );
+      // Try to insert with recipeUnit column
+      let recipeResult;
+      try {
+        [recipeResult] = await connection.execute(
+          'INSERT INTO recipes (name, category, categoryId, recipeUnit) VALUES (?, ?, ?, ?)',
+          [name, categoryName, categoryIdValue, recipeUnitValue]
+        );
+      } catch (error) {
+        // If recipeUnit column doesn't exist, insert without it
+        if (error.code === 'ER_BAD_FIELD_ERROR' && error.sqlMessage.includes('recipeUnit')) {
+          [recipeResult] = await connection.execute(
+            'INSERT INTO recipes (name, category, categoryId) VALUES (?, ?, ?)',
+            [name, categoryName, categoryIdValue]
+          );
+        } else {
+          throw error;
+        }
+      }
       
       const recipeId = recipeResult.insertId;
       
@@ -114,10 +170,23 @@ class Recipe {
       const categoryIdValue = categoryId !== undefined ? categoryId : null;
       const recipeUnitValue = recipeUnit || 'unit';
       
-      await connection.execute(
-        'UPDATE recipes SET name = ?, category = ?, categoryId = ?, recipeUnit = ? WHERE id = ?',
-        [name, categoryName, categoryIdValue, recipeUnitValue, id]
-      );
+      // Try to update with recipeUnit column
+      try {
+        await connection.execute(
+          'UPDATE recipes SET name = ?, category = ?, categoryId = ?, recipeUnit = ? WHERE id = ?',
+          [name, categoryName, categoryIdValue, recipeUnitValue, id]
+        );
+      } catch (error) {
+        // If recipeUnit column doesn't exist, update without it
+        if (error.code === 'ER_BAD_FIELD_ERROR' && error.sqlMessage.includes('recipeUnit')) {
+          await connection.execute(
+            'UPDATE recipes SET name = ?, category = ?, categoryId = ? WHERE id = ?',
+            [name, categoryName, categoryIdValue, id]
+          );
+        } else {
+          throw error;
+        }
+      }
       
       await connection.execute(
         'DELETE FROM recipe_ingredients WHERE recipeId = ?',

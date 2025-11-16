@@ -132,6 +132,7 @@ CREATE TABLE IF NOT EXISTS recipes (
   id INT AUTO_INCREMENT PRIMARY KEY,
   name VARCHAR(255) NOT NULL,
   description TEXT,
+  recipeUnit VARCHAR(50) DEFAULT 'unit',
   categoryId INT,
   createdAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
   updatedAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
@@ -248,3 +249,6 @@ AND p.name IN ('view_materials', 'view_recipes', 'view_production', 'view_purcha
 -- Insert default admin user with hashed password
 INSERT IGNORE INTO users (name, email, password, role) 
 VALUES ('Admin User', 'admin@example.com', '$2b$10$IxhgKfJq1yb900HvtYpmqOj95kl2HidCDdkWQSHI8m5Efkpqbfa22', 'admin');
+
+-- Add recipeUnit column if it doesn't exist (for backward compatibility)
+ALTER TABLE recipes ADD COLUMN IF NOT EXISTS recipeUnit VARCHAR(50) DEFAULT 'unit';
