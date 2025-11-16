@@ -81,7 +81,12 @@ async function startServer() {
         }, 5000);
       }
     });
-    
+
+    // Add a small delay to ensure the server is fully ready
+    setTimeout(() => {
+      console.log('✅ Server startup delay completed - fully ready');
+    }, 1000);
+
     // Add error handler for the server
     server.on('error', (error) => {
       console.error('❌ Server error:', error);
@@ -135,7 +140,7 @@ async function fixAdminPasswordIfNecessary() {
         const hashedPassword = await bcrypt.hash('admin123', 10);
         
         // Update the admin user's password
-        await pool.execute(
+        const [result] = await pool.execute(
           'UPDATE users SET password = ? WHERE id = ?',
           [hashedPassword, user.id]
         );

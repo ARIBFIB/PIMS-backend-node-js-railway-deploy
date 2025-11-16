@@ -381,6 +381,19 @@ async function initDatabase() {
       // Small delay to ensure UOM records are committed
       await new Promise(resolve => setTimeout(resolve, 100));
 
+      // Debug: Check if itemCode column exists
+      try {
+        const [columns] = await connection.query("SHOW COLUMNS FROM materials LIKE 'itemCode'");
+        console.log("itemCode column check:", columns);
+        if (columns.length === 0) {
+          console.log("⚠️  itemCode column does not exist in materials table");
+        } else {
+          console.log("✅ itemCode column exists in materials table");
+        }
+      } catch (columnCheckError) {
+        console.log("⚠️  Error checking itemCode column:", columnCheckError.message);
+      }
+
       await connection.query(`
         INSERT INTO materials (itemCode, name, unit, quantity, unitPrice, lowStockThreshold, categoryId, uomId) VALUES
         ('F001', 'Flour', 'kg', 200, 120, 50, (SELECT id FROM categories WHERE code = '001'), (SELECT id FROM unit_of_measures WHERE symbol = 'kg' LIMIT 1)),
