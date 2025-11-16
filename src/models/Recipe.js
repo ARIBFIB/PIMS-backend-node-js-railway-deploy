@@ -198,6 +198,12 @@ class Recipe {
     try {
       await connection.beginTransaction();
       
+      // Delete related records first to avoid foreign key constraint violations
+      await connection.execute(
+        'DELETE FROM production_logs WHERE recipeId = ?',
+        [id]
+      );
+      
       await connection.execute(
         'DELETE FROM recipe_ingredients WHERE recipeId = ?',
         [id]
@@ -228,6 +234,8 @@ class Recipe {
       const [countResult] = await connection.execute('SELECT COUNT(*) as count FROM recipes');
       const recipeCount = countResult[0].count;
       
+      // Delete related records first to avoid foreign key constraint violations
+      await connection.execute('DELETE FROM production_logs');
       await connection.execute('DELETE FROM recipe_ingredients');
       await connection.execute('DELETE FROM recipes');
       
