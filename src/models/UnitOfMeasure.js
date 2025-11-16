@@ -26,6 +26,16 @@ class UnitOfMeasure {
     const { name, symbol } = uomData;
     
     try {
+      // Check if a UOM with the same name or symbol already exists
+      const [existingRows] = await pool.execute(
+        'SELECT id FROM unit_of_measures WHERE name = ? OR symbol = ?',
+        [name, symbol]
+      );
+      
+      if (existingRows.length > 0) {
+        throw new Error('A Unit of Measure with this name or symbol already exists');
+      }
+      
       const [result] = await pool.execute(
         'INSERT INTO unit_of_measures (name, symbol) VALUES (?, ?)',
         [name, symbol]
@@ -40,6 +50,16 @@ class UnitOfMeasure {
     const { name, symbol } = uomData;
     
     try {
+      // Check if another UOM with the same name or symbol already exists
+      const [existingRows] = await pool.execute(
+        'SELECT id FROM unit_of_measures WHERE (name = ? OR symbol = ?) AND id != ?',
+        [name, symbol, id]
+      );
+      
+      if (existingRows.length > 0) {
+        throw new Error('A Unit of Measure with this name or symbol already exists');
+      }
+      
       await pool.execute(
         'UPDATE unit_of_measures SET name = ?, symbol = ? WHERE id = ?',
         [name, symbol, id]

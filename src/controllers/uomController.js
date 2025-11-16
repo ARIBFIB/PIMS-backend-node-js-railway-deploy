@@ -43,6 +43,9 @@ const createUOM = async (req, res) => {
     res.status(201).json({ message: 'Unit of Measure created successfully', uom });
   } catch (error) {
     console.error('Create UOM error:', error);
+    if (error.message.includes('already exists')) {
+      return res.status(409).json({ message: error.message });
+    }
     res.status(500).json({ message: 'Internal server error' });
   }
 };
@@ -65,6 +68,9 @@ const updateUOM = async (req, res) => {
     res.json({ message: 'Unit of Measure updated successfully', uom });
   } catch (error) {
     console.error('Update UOM error:', error);
+    if (error.message.includes('already exists')) {
+      return res.status(409).json({ message: error.message });
+    }
     res.status(500).json({ message: 'Internal server error' });
   }
 };
