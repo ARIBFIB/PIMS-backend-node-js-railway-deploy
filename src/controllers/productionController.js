@@ -18,6 +18,23 @@ const getProductionLogs = async (req, res) => {
   }
 };
 
+const getProductionLog = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const logs = await ProductionLog.getAll();
+    const log = logs.find(log => log.id === parseInt(id));
+    
+    if (!log) {
+      return res.status(404).json({ message: 'Production log not found' });
+    }
+    
+    res.json(log);
+  } catch (error) {
+    console.error('Get production log error:', error);
+    res.status(500).json({ message: 'Internal server error' });
+  }
+};
+
 const logProduction = async (req, res) => {
   try {
     const { date, batchNumber, recipeId, customerId, quantityProduced, additionalExpense } = req.body;
@@ -43,6 +60,25 @@ const logProduction = async (req, res) => {
   }
 };
 
+const updateProductionLog = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const updateData = req.body;
+    
+    // Validate that at least one field is being updated
+    if (Object.keys(updateData).length === 0) {
+      return res.status(400).json({ message: 'At least one field must be provided for update' });
+    }
+    
+    const result = await ProductionLog.update(id, updateData);
+    
+    res.json({ message: 'Production log updated successfully', result });
+  } catch (error) {
+    console.error('Update production log error:', error);
+    res.status(500).json({ message: error.message || 'Internal server error' });
+  }
+};
+
 const approveProduction = async (req, res) => {
   try {
     const { id } = req.params;
@@ -58,6 +94,8 @@ const approveProduction = async (req, res) => {
 
 module.exports = {
   getProductionLogs,
+  getProductionLog,
   logProduction,
+  updateProductionLog,
   approveProduction
 };

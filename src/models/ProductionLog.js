@@ -144,6 +144,95 @@ class ProductionLog {
       connection.release();
     }
   }
+
+  static async update(id, updateData) {
+    const { recipeId, customerId, quantityProduced, additionalExpense } = updateData;
+    const connection = await pool.getConnection();
+    
+    try {
+      await connection.beginTransaction();
+      
+      // Get the existing production log
+      const [existingRows] = await connection.execute(
+        'SELECT * FROM production_logs WHERE id = ?',
+        [id]
+      );
+      
+      if (existingRows.length === 0) {
+        throw new Error('Production log not found');
+      }
+      
+      const existingLog = existingRows[0];
+      
+      // If quantity is being updated, we need to adjust inventory
+      if (quantityProduced !== undefined && quantityProduced !== existingLog.quantityProduced) {
+        // Refund materials for the old quantity
+        const oldCalculation = await Recipe.calculateMaterials(existingLog.recipeId, existingLog.quantityProduced);
+        for (const material of oldCalculation.materialsRequired) {
+          const materialData = await Material.findById(material.id);
+          const newQuantity = materialData.quantity + material.quantity;
+          await Material.updateQuantity(material.id, newQuantity);
+        }
+        
+        // Deduct materials for the new quantity
+        const newCalculation = await Recipe.calculateMaterials(recipeId || existingLog.recipeId, quantityProduced);
+        for (const material of newCalculation.materialsRequired) {
+          const materialData = await Material.findById(material.id);
+          if (materialData.quantity < material.quantity) {
+            throw new Error(`Insufficient ${material.name}. Available: ${materialData.quantity}, Required: ${material.quantity}`);
+          }
+          const newQuantity = materialData.quantity - material.quantity;
+          await Material.updateQuantity(material.id, newQuantity);
+        }
+        
+        // Update material cost
+        await connection.execute(
+          'UPDATE production_logs SET materialCost = ? WHERE id = ?',
+          [newCalculation.estimatedCost, id]
+        );
+      }
+      
+      // Build update query dynamically based on provided fields
+      const fields = [];
+      const values = [];
+      
+      if (recipeId !== undefined) {
+        fields.push('recipeId = ?');
+        values.push(recipeId);
+      }
+      
+      if (customerId !== undefined) {
+        fields.push('customerId = ?');
+        values.push(customerId || null);
+      }
+      
+      if (quantityProduced !== undefined) {
+        fields.push('quantityProduced = ?');
+        values.push(quantityProduced);
+      }
+      
+      if (additionalExpense !== undefined) {
+        fields.push('additionalExpense = ?');
+        values.push(additionalExpense);
+      }
+      
+      if (fields.length > 0) {
+        values.push(id); // Add id for WHERE clause
+        await connection.execute(
+          `UPDATE production_logs SET ${fields.join(', ')} WHERE id = ?`,
+          values
+        );
+      }
+      
+      await connection.commit();
+      return { id, ...updateData };
+    } catch (error) {
+      await connection.rollback();
+      throw error;
+    } finally {
+      connection.release();
+    }
+  }
 }
 
 module.exports = ProductionLog;
