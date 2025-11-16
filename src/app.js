@@ -26,6 +26,11 @@ const errorHandler = require('./middleware/errorHandler');
 
 const app = express();
 
+// Add an immediate health check endpoint at the very beginning
+app.get('/ping', (req, res) => {
+  res.status(200).json({ status: 'OK', message: 'Server is responding' });
+});
+
 // Trust proxy for rate limiting
 app.set('trust proxy', 1);
 

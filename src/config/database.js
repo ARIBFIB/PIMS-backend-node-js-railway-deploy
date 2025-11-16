@@ -440,7 +440,8 @@ async function initDatabase() {
   } catch (err) {
     console.error("❌ Database initialization failed:", err.message);
     if (connection) await connection.end();
-    process.exit(1);
+    // Instead of exiting the process, throw the error to be handled by the caller
+    throw err;
   }
   
   console.log("✅ Database initialization completed");

@@ -21,9 +21,26 @@ console.log('- MYSQLDATABASE:', process.env.MYSQLDATABASE);
 console.log('- MYSQLHOST:', process.env.MYSQLHOST);
 console.log('- MYSQLUSER:', process.env.MYSQLUSER);
 
-// Initialize database before starting server
-async function startServer() {
-  console.log('🚀 Starting server initialization...');
+// Add a readiness check endpoint to the app
+app.get('/ready', (req, res) => {
+  console.log('Readiness check called');
+  if (isServerReady) {
+    res.status(200).json({ 
+      status: 'READY', 
+      timestamp: new Date().toISOString(),
+      uptime: process.uptime()
+    });
+  } else {
+    res.status(503).json({ 
+      status: 'NOT READY', 
+      timestamp: new Date().toISOString()
+    });
+  }
+});
+
+// Initialize database after starting server
+async function initializeDatabaseAsync() {
+  console.log('🚀 Starting async database initialization...');
   
   try {
     // Test database connection first
@@ -47,79 +64,11 @@ async function startServer() {
         }
       }
     } else {
-      console.warn('⚠️  Database connection failed. Starting server without database initialization.');
+      console.warn('⚠️  Database connection failed. Will retry in background.');
       console.warn('This is normal for Railway deployments where the database may not be ready yet.');
     }
-    
-    console.log(`🚀 Starting server on port ${PORT}...`);
-    const server = app.listen(PORT, '0.0.0.0', () => {
-      console.log(`🚀 Server running on port ${PORT}`);
-      console.log(`CORS enabled for all origins`);
-      
-      // Mark server as ready
-      isServerReady = true;
-      console.log(`✅ Server is ready to accept requests`);
-      
-      // For Railway deployments, try to initialize database after server starts
-      if (process.env.MYSQLDATABASE && !isConnected) {
-        console.log('🔄 Retrying database initialization in background...');
-        setTimeout(async () => {
-          try {
-            await initDatabase();
-            console.log('✅ Database initialized successfully on retry');
-            
-            // Fix admin password if it's plain text
-            await fixAdminPasswordIfNecessary();
-            
-            // Run Railway post-deploy script (for Railway deployments)
-            if (process.env.MYSQLDATABASE) {
-              try {
-                await runRailwayPostDeploy();
-              } catch (err) {
-                console.error('⚠️  Railway post-deploy script failed:', err.message);
-              }
-            }
-          } catch (err) {
-            console.error('❌ Database initialization failed on retry:', err.message);
-          }
-        }, 5000);
-      }
-    });
-
-    // Add a small delay to ensure the server is fully ready
-    setTimeout(() => {
-      console.log('✅ Server startup delay completed - fully ready');
-    }, 1000);
-
-    // Add error handler for the server
-    server.on('error', (error) => {
-      console.error('❌ Server error:', error);
-      if (error.syscall !== 'listen') {
-        throw error;
-      }
-
-      const bind = typeof PORT === 'string'
-        ? 'Pipe ' + PORT
-        : 'Port ' + PORT;
-
-      switch (error.code) {
-        case 'EACCES':
-          console.error(bind + ' requires elevated privileges');
-          process.exit(1);
-          break;
-        case 'EADDRINUSE':
-          console.error(bind + ' is already in use');
-          process.exit(1);
-          break;
-        default:
-          throw error;
-      }
-    });
-    
-    console.log('✅ Server startup process completed');
   } catch (err) {
-    console.error('❌ Failed to start server:', err);
-    process.exit(1);
+    console.error('❌ Failed to initialize database:', err);
   }
 }
 
@@ -161,21 +110,47 @@ async function fixAdminPasswordIfNecessary() {
   }
 }
 
-// Add a readiness check endpoint to the app
-const express = require('express');
-app.get('/ready', (req, res) => {
-  if (isServerReady) {
-    res.status(200).json({ 
-      status: 'READY', 
-      timestamp: new Date().toISOString(),
-      uptime: process.uptime()
-    });
-  } else {
-    res.status(503).json({ 
-      status: 'NOT READY', 
-      timestamp: new Date().toISOString()
-    });
+// Add a simple startup message
+console.log(`🚀 Attempting to start server on port ${PORT}...`);
+
+// Try different binding approaches for better compatibility
+const server = app.listen(PORT, () => {
+  console.log(`🚀 Server successfully running on port ${PORT}`);
+  console.log(`CORS enabled for all origins`);
+  
+  // Mark server as ready immediately
+  isServerReady = true;
+  console.log(`✅ Server is ready to accept requests`);
+  
+  // Initialize database asynchronously after server starts
+  setTimeout(async () => {
+    await initializeDatabaseAsync();
+  }, 1000);
+});
+
+// Add error handler for the server
+server.on('error', (error) => {
+  console.error('❌ Server error:', error);
+  if (error.syscall !== 'listen') {
+    throw error;
+  }
+
+  const bind = typeof PORT === 'string'
+    ? 'Pipe ' + PORT
+    : 'Port ' + PORT;
+
+  switch (error.code) {
+    case 'EACCES':
+      console.error(bind + ' requires elevated privileges');
+      process.exit(1);
+      break;
+    case 'EADDRINUSE':
+      console.error(bind + ' is already in use');
+      process.exit(1);
+      break;
+    default:
+      throw error;
   }
 });
 
-startServer();
+console.log('✅ Server startup process initiated');
