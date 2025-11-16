@@ -79,7 +79,9 @@ class Recipe {
   }
 
   static async create(recipeData) {
+    console.log('Recipe data received in model:', recipeData);
     const { name, category, categoryId, recipeUnit, ingredients } = recipeData;
+    console.log('Recipe unit value:', recipeUnit);
     const connection = await pool.getConnection();
     
     try {
@@ -88,7 +90,8 @@ class Recipe {
       // Handle undefined values properly
       const categoryName = category !== undefined ? category : null;
       const categoryIdValue = categoryId !== undefined ? categoryId : null;
-      const recipeUnitValue = recipeUnit || 'unit';
+      // Only default to 'unit' if recipeUnit is null or undefined, not for empty strings
+      const recipeUnitValue = (recipeUnit !== undefined && recipeUnit !== null) ? recipeUnit : 'unit';
       
       // Try to insert with recipeUnit column first
       let recipeResult;
@@ -131,7 +134,9 @@ class Recipe {
   }
 
   static async update(id, recipeData) {
+    console.log('Recipe update data received in model:', recipeData);
     const { name, category, categoryId, recipeUnit, ingredients } = recipeData;
+    console.log('Recipe unit value for update:', recipeUnit);
     const connection = await pool.getConnection();
     
     try {
@@ -140,7 +145,8 @@ class Recipe {
       // Handle undefined values properly
       const categoryName = category !== undefined ? category : null;
       const categoryIdValue = categoryId !== undefined ? categoryId : null;
-      const recipeUnitValue = recipeUnit || 'unit';
+      // Only default to 'unit' if recipeUnit is null or undefined, not for empty strings
+      const recipeUnitValue = (recipeUnit !== undefined && recipeUnit !== null) ? recipeUnit : 'unit';
       
       // Try to update with recipeUnit column first
       try {

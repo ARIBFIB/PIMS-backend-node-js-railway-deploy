@@ -28,6 +28,7 @@ const getRecipeById = async (req, res) => {
 
 const createRecipe = async (req, res) => {
   try {
+    console.log('Received recipe data:', req.body);
     const { name, category, recipeUnit, ingredients } = req.body;
     
     // Validate input
