@@ -33,7 +33,6 @@ const corsOptions = {
   origin: [
     'https://pims-project-214e1e.netlify.app',
     'https://pims-project-61fb3d.netlify.app',
-    'https://pims-backend-node-js-railway-deploy-production-f9dc.up.railway.app', // Added Railway domain
     'http://localhost:3000',
     'http://127.0.0.1:3000',
     'http://localhost:5173',
@@ -46,7 +45,8 @@ const corsOptions = {
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization'],
-  optionsSuccessStatus: 200
+  optionsSuccessStatus: 200,
+  exposedHeaders: ['Authorization'] // Expose Authorization header for frontend access
 };
 
 // Apply CORS middleware
@@ -54,6 +54,15 @@ app.use(cors(corsOptions));
 
 // Handle preflight requests explicitly
 app.options('*', cors(corsOptions)); // Handle all OPTIONS requests with CORS
+
+// Add a middleware to ensure CORS headers are always set
+app.use((req, res, next) => {
+  res.header('Access-Control-Allow-Origin', req.headers.origin || '*');
+  res.header('Access-Control-Allow-Credentials', 'true');
+  res.header('Access-Control-Allow-Headers', 'Origin, X-Requested-With, Content-Type, Accept, Authorization');
+  res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, PATCH, OPTIONS');
+  next();
+});
 
 // Rate limiting with more appropriate configuration for a dashboard application
 const limiter = rateLimit({
