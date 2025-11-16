@@ -51,14 +51,30 @@ class UnitOfMeasure {
   }
 
   static async delete(id) {
+    const connection = await pool.getConnection();
+    
     try {
-      const [result] = await pool.execute(
+      await connection.beginTransaction();
+      
+      // Delete related records first to avoid foreign key constraint violations
+      await connection.execute('DELETE FROM recipe_ingredients WHERE uomId = ?', [id]);
+      await connection.execute('DELETE FROM purchase_order_items WHERE uomId = ?', [id]);
+      await connection.execute('DELETE FROM materials WHERE uomId = ?', [id]);
+      
+      // Now delete the unit_of_measures
+      const [result] = await connection.execute(
         'DELETE FROM unit_of_measures WHERE id = ?',
         [id]
       );
+      
+      await connection.commit();
       return result.affectedRows > 0;
     } catch (error) {
+      await connection.rollback();
+      console.error('Delete UOM error:', error);
       throw error;
+    } finally {
+      connection.release();
     }
   }
   
