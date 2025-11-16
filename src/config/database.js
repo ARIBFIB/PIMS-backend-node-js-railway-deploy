@@ -166,6 +166,7 @@ async function initDatabase() {
         name VARCHAR(255) NOT NULL,
         category VARCHAR(100) NOT NULL,
         categoryId INT,
+        recipeUnit VARCHAR(50) DEFAULT 'unit',
         createdAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
         updatedAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
         FOREIGN KEY (categoryId) REFERENCES categories(id)
