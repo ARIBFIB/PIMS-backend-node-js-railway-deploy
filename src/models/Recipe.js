@@ -309,19 +309,20 @@ class Recipe {
         WHERE ri.recipeId = ?
       `, [id]);
       
-      // Calculate maximum quantity that can be produced based on available materials
-      let maxQuantity = Infinity;
-      let limitingFactors = [];
-      
       // Handle case where there are no ingredients
       if (ingredientRows.length === 0) {
         return {
           recipeName: recipe.name,
-          maxQuantity: 0,
+          maxQuantityWithThreshold: 0,
+          maxQuantityWithoutThreshold: 0,
           limitingFactors: [],
           belowThresholdMaterials: []
         };
       }
+      
+      // Calculate maximum quantity that can be produced based on available materials (WITHOUT considering threshold)
+      let maxQuantityWithoutThreshold = Infinity;
+      let limitingFactorsWithoutThreshold = [];
       
       // For each ingredient, calculate how many units of the recipe can be produced
       for (const ingredient of ingredientRows) {
@@ -335,17 +336,17 @@ class Recipe {
         const maxFromThisIngredient = Math.floor(ingredient.availableQuantity / ingredient.quantity);
         
         // Update the overall maximum if this ingredient is more limiting
-        if (maxFromThisIngredient < maxQuantity) {
-          maxQuantity = maxFromThisIngredient;
-          limitingFactors = [{
+        if (maxFromThisIngredient < maxQuantityWithoutThreshold) {
+          maxQuantityWithoutThreshold = maxFromThisIngredient;
+          limitingFactorsWithoutThreshold = [{
             materialName: ingredient.name,
             available: ingredient.availableQuantity,
             requiredPerUnit: ingredient.quantity,
             maxProducible: maxFromThisIngredient
           }];
-        } else if (maxFromThisIngredient === maxQuantity) {
+        } else if (maxFromThisIngredient === maxQuantityWithoutThreshold) {
           // Add to limiting factors if it's equally limiting
-          limitingFactors.push({
+          limitingFactorsWithoutThreshold.push({
             materialName: ingredient.name,
             available: ingredient.availableQuantity,
             requiredPerUnit: ingredient.quantity,
@@ -355,9 +356,54 @@ class Recipe {
       }
       
       // If no valid ingredients with positive quantities, set max to 0
-      if (maxQuantity === Infinity) {
-        maxQuantity = 0;
+      if (maxQuantityWithoutThreshold === Infinity) {
+        maxQuantityWithoutThreshold = 0;
       }
+      
+      // Calculate maximum quantity that can be produced based on available materials (WITH considering threshold)
+      let maxQuantityWithThreshold = Infinity;
+      let limitingFactorsWithThreshold = [];
+      
+      // For each ingredient, calculate how many units of the recipe can be produced without going below threshold
+      for (const ingredient of ingredientRows) {
+        // Skip ingredients with zero quantity requirement (shouldn't happen but just in case)
+        if (ingredient.quantity <= 0) {
+          continue;
+        }
+        
+        // Calculate maximum producible units based on this ingredient without going below threshold
+        // Formula: (availableQuantity - lowStockThreshold) / quantityPerUnit
+        const maxFromThisIngredient = Math.floor((ingredient.availableQuantity - ingredient.lowStockThreshold) / ingredient.quantity);
+        
+        // Update the overall maximum if this ingredient is more limiting
+        if (maxFromThisIngredient < maxQuantityWithThreshold) {
+          maxQuantityWithThreshold = maxFromThisIngredient;
+          limitingFactorsWithThreshold = [{
+            materialName: ingredient.name,
+            available: ingredient.availableQuantity,
+            threshold: ingredient.lowStockThreshold,
+            requiredPerUnit: ingredient.quantity,
+            maxProducible: maxFromThisIngredient
+          }];
+        } else if (maxFromThisIngredient === maxQuantityWithThreshold) {
+          // Add to limiting factors if it's equally limiting
+          limitingFactorsWithThreshold.push({
+            materialName: ingredient.name,
+            available: ingredient.availableQuantity,
+            threshold: ingredient.lowStockThreshold,
+            requiredPerUnit: ingredient.quantity,
+            maxProducible: maxFromThisIngredient
+          });
+        }
+      }
+      
+      // If no valid ingredients with positive quantities, set max to 0
+      if (maxQuantityWithThreshold === Infinity) {
+        maxQuantityWithThreshold = 0;
+      }
+      
+      // Use the more restrictive of the two values as the actual max quantity
+      const maxQuantity = Math.min(maxQuantityWithThreshold, maxQuantityWithoutThreshold);
       
       // Check which materials would go below threshold after producing max quantity
       const belowThresholdMaterials = [];
@@ -383,8 +429,12 @@ class Recipe {
       
       return {
         recipeName: recipe.name,
+        maxQuantityWithThreshold: maxQuantityWithThreshold,
+        maxQuantityWithoutThreshold: maxQuantityWithoutThreshold,
         maxQuantity: maxQuantity,
-        limitingFactors,
+        limitingFactorsWithThreshold,
+        limitingFactorsWithoutThreshold,
+        limitingFactors: maxQuantityWithThreshold <= maxQuantityWithoutThreshold ? limitingFactorsWithThreshold : limitingFactorsWithoutThreshold,
         belowThresholdMaterials
       };
     } catch (error) {
