@@ -3,33 +3,18 @@ const pool = require('../config/dbPool');
 class Recipe {
   static async getAll() {
     try {
-      // Try to select all fields including recipeUnit
-      let recipeRows;
-      try {
-        [recipeRows] = await pool.execute(`
-          SELECT r.*, c.name as categoryName 
-          FROM recipes r 
-          LEFT JOIN categories c ON r.categoryId = c.id 
-          ORDER BY r.name
-        `);
-      } catch (error) {
-        // If recipeUnit column doesn't exist, select without it
-        if (error.code === 'ER_BAD_FIELD_ERROR' && error.sqlMessage.includes('recipeUnit')) {
-          [recipeRows] = await pool.execute(`
-            SELECT r.*, c.name as categoryName 
-            FROM recipes r 
-            LEFT JOIN categories c ON r.categoryId = c.id 
-            ORDER BY r.name
-          `);
-          // Add default recipeUnit to each recipe
-          recipeRows = recipeRows.map(recipe => ({
-            ...recipe,
-            recipeUnit: recipe.recipeUnit || 'unit'
-          }));
-        } else {
-          throw error;
-        }
-      }
+      let [recipeRows] = await pool.execute(`
+        SELECT r.*, c.name as categoryName 
+        FROM recipes r 
+        LEFT JOIN categories c ON r.categoryId = c.id 
+        ORDER BY r.name
+      `);
+      
+      // Ensure all recipes have a recipeUnit property
+      recipeRows = recipeRows.map(recipe => ({
+        ...recipe,
+        recipeUnit: recipe.recipeUnit || 'unit'
+      }));
       
       // Get all ingredients for all recipes
       const [ingredientRows] = await pool.execute(`
@@ -61,35 +46,20 @@ class Recipe {
 
   static async findById(id) {
     try {
-      // Try to select all fields including recipeUnit
-      let recipeRows;
-      try {
-        [recipeRows] = await pool.execute(`
-          SELECT r.*, c.name as categoryName 
-          FROM recipes r 
-          LEFT JOIN categories c ON r.categoryId = c.id 
-          WHERE r.id = ?
-        `, [id]);
-      } catch (error) {
-        // If recipeUnit column doesn't exist, select without it
-        if (error.code === 'ER_BAD_FIELD_ERROR' && error.sqlMessage.includes('recipeUnit')) {
-          [recipeRows] = await pool.execute(`
-            SELECT r.*, c.name as categoryName 
-            FROM recipes r 
-            LEFT JOIN categories c ON r.categoryId = c.id 
-            WHERE r.id = ?
-          `, [id]);
-          // Add default recipeUnit to each recipe
-          recipeRows = recipeRows.map(recipe => ({
-            ...recipe,
-            recipeUnit: recipe.recipeUnit || 'unit'
-          }));
-        } else {
-          throw error;
-        }
-      }
+      let [recipeRows] = await pool.execute(`
+        SELECT r.*, c.name as categoryName 
+        FROM recipes r 
+        LEFT JOIN categories c ON r.categoryId = c.id 
+        WHERE r.id = ?
+      `, [id]);
       
       if (recipeRows.length === 0) return null;
+      
+      // Ensure recipe has a recipeUnit property
+      const recipe = {
+        ...recipeRows[0],
+        recipeUnit: recipeRows[0].recipeUnit || 'unit'
+      };
       
       const [ingredientRows] = await pool.execute(`
         SELECT ri.*, m.name as materialName, m.unit, u.name as uomName, u.symbol as uomSymbol
@@ -100,7 +70,7 @@ class Recipe {
       `, [id]);
       
       return {
-        ...recipeRows[0],
+        ...recipe,
         ingredients: ingredientRows
       };
     } catch (error) {
@@ -120,22 +90,24 @@ class Recipe {
       const categoryIdValue = categoryId !== undefined ? categoryId : null;
       const recipeUnitValue = recipeUnit || 'unit';
       
-      // Try to insert with recipeUnit column
+      // Try to insert with recipeUnit column first
       let recipeResult;
       try {
         [recipeResult] = await connection.execute(
           'INSERT INTO recipes (name, category, categoryId, recipeUnit) VALUES (?, ?, ?, ?)',
           [name, categoryName, categoryIdValue, recipeUnitValue]
         );
-      } catch (error) {
-        // If recipeUnit column doesn't exist, insert without it
-        if (error.code === 'ER_BAD_FIELD_ERROR' && error.sqlMessage.includes('recipeUnit')) {
+      } catch (insertError) {
+        // If recipeUnit column doesn't exist, fall back to insert without it
+        if (insertError.code === 'ER_BAD_FIELD_ERROR' && insertError.sqlMessage.includes('recipeUnit')) {
           [recipeResult] = await connection.execute(
             'INSERT INTO recipes (name, category, categoryId) VALUES (?, ?, ?)',
             [name, categoryName, categoryIdValue]
           );
+          console.log('Warning: recipeUnit column not found, inserted without it');
         } else {
-          throw error;
+          // Re-throw if it's a different error
+          throw insertError;
         }
       }
       
@@ -170,21 +142,23 @@ class Recipe {
       const categoryIdValue = categoryId !== undefined ? categoryId : null;
       const recipeUnitValue = recipeUnit || 'unit';
       
-      // Try to update with recipeUnit column
+      // Try to update with recipeUnit column first
       try {
         await connection.execute(
           'UPDATE recipes SET name = ?, category = ?, categoryId = ?, recipeUnit = ? WHERE id = ?',
           [name, categoryName, categoryIdValue, recipeUnitValue, id]
         );
-      } catch (error) {
-        // If recipeUnit column doesn't exist, update without it
-        if (error.code === 'ER_BAD_FIELD_ERROR' && error.sqlMessage.includes('recipeUnit')) {
+      } catch (updateError) {
+        // If recipeUnit column doesn't exist, fall back to update without it
+        if (updateError.code === 'ER_BAD_FIELD_ERROR' && updateError.sqlMessage.includes('recipeUnit')) {
           await connection.execute(
             'UPDATE recipes SET name = ?, category = ?, categoryId = ? WHERE id = ?',
             [name, categoryName, categoryIdValue, id]
           );
+          console.log('Warning: recipeUnit column not found, updated without it');
         } else {
-          throw error;
+          // Re-throw if it's a different error
+          throw updateError;
         }
       }
       

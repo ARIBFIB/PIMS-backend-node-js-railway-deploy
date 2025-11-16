@@ -2,7 +2,7 @@ const Recipe = require('../models/Recipe');
 
 const getAllRecipes = async (req, res) => {
   try {
-    const recipe = await Recipe.getAll();
+    const recipes = await Recipe.getAll();
     res.json(recipes);
   } catch (error) {
     console.error('Get recipes error:', error);
