@@ -24,28 +24,28 @@ class Customer {
   }
 
   static async create(customerData) {
-    const { name, email, phone, address } = customerData;
+    const { name, phone, address } = customerData;
     
     try {
       const [result] = await pool.execute(
         'INSERT INTO customers (name, email, phone, address) VALUES (?, ?, ?, ?)',
-        [name, email, phone, address]
+        [name, null, phone, address]
       );
-      return { id: result.insertId, ...customerData };
+      return { id: result.insertId, name, phone, address };
     } catch (error) {
       throw error;
     }
   }
 
   static async update(id, customerData) {
-    const { name, email, phone, address } = customerData;
+    const { name, phone, address } = customerData;
     
     try {
       await pool.execute(
         'UPDATE customers SET name = ?, email = ?, phone = ?, address = ? WHERE id = ?',
-        [name, email, phone, address, id]
+        [name, null, phone, address, id]
       );
-      return { id, ...customerData };
+      return { id, name, phone, address };
     } catch (error) {
       throw error;
     }
