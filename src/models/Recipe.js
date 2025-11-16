@@ -11,9 +11,10 @@ class Recipe {
       `);
       
       // Ensure all recipes have a recipeUnit property
+      // If the column doesn't exist in the database, recipe.recipeUnit will be undefined
       recipeRows = recipeRows.map(recipe => ({
         ...recipe,
-        recipeUnit: recipe.recipeUnit || 'unit'
+        recipeUnit: recipe.recipeUnit !== undefined ? recipe.recipeUnit : 'unit'
       }));
       
       // Get all ingredients for all recipes
@@ -56,9 +57,10 @@ class Recipe {
       if (recipeRows.length === 0) return null;
       
       // Ensure recipe has a recipeUnit property
+      // If the column doesn't exist in the database, recipe.recipeUnit will be undefined
       const recipe = {
         ...recipeRows[0],
-        recipeUnit: recipeRows[0].recipeUnit || 'unit'
+        recipeUnit: recipeRows[0].recipeUnit !== undefined ? recipeRows[0].recipeUnit : 'unit'
       };
       
       const [ingredientRows] = await pool.execute(`
