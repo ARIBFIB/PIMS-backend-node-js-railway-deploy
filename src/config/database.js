@@ -16,6 +16,7 @@ const dbConfig = {
 const pool = mysql.createPool(dbConfig);
 
 async function initDatabase() {
+  console.log('🚀 Starting database initialization...');
   let connection;
 
   try {
@@ -52,6 +53,8 @@ async function initDatabase() {
       );
     `);
 
+    console.log("✅ Roles table created");
+
     // PERMISSIONS
     await connection.query(`
       CREATE TABLE IF NOT EXISTS permissions (
@@ -62,6 +65,8 @@ async function initDatabase() {
         updatedAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
       );
     `);
+
+    console.log("✅ Permissions table created");
 
     // ROLE-PERMISSION mapping table
     await connection.query(`
@@ -77,6 +82,8 @@ async function initDatabase() {
       );
     `);
 
+    console.log("✅ Role-permissions table created");
+
     // USER-ROLE mapping table (for multiple roles per user)
     await connection.query(`
       CREATE TABLE IF NOT EXISTS user_roles (
@@ -90,6 +97,8 @@ async function initDatabase() {
         UNIQUE KEY unique_user_role (userId, roleId)
       );
     `);
+
+    console.log("✅ User-roles table created");
 
     // USER-PERMISSION mapping table (for custom permissions)
     await connection.query(`
@@ -105,6 +114,8 @@ async function initDatabase() {
       );
     `);
 
+    console.log("✅ User-permissions table created");
+
     // CATEGORIES (Create before materials that reference it)
     await connection.query(`
       CREATE TABLE IF NOT EXISTS categories (
@@ -116,6 +127,8 @@ async function initDatabase() {
       );
     `);
 
+    console.log("✅ Categories table created");
+
     // UNIT OF MEASURES (Create before materials that reference it)
     await connection.query(`
       CREATE TABLE IF NOT EXISTS unit_of_measures (
@@ -126,6 +139,8 @@ async function initDatabase() {
         updatedAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
       );
     `);
+
+    console.log("✅ Unit of measures table created");
 
     // USERS (Modified to include roleId)
     await connection.query(` 
@@ -139,6 +154,8 @@ async function initDatabase() {
         updatedAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
       );
     `);
+
+    console.log("✅ Users table created");
 
     // MATERIALS (Now we can include the foreign key columns directly)
     await connection.query(`
@@ -159,6 +176,8 @@ async function initDatabase() {
       );
     `);
 
+    console.log("✅ Materials table created");
+
     // RECIPES
     await connection.query(`
       CREATE TABLE IF NOT EXISTS recipes (
@@ -173,6 +192,7 @@ async function initDatabase() {
       );
     `);
     
+    console.log("✅ Recipes table created");
 
     // RECIPE INGREDIENTS
     await connection.query(`
@@ -185,6 +205,8 @@ async function initDatabase() {
         FOREIGN KEY (materialId) REFERENCES materials(id) ON DELETE CASCADE
       );
     `);
+
+    console.log("✅ Recipe ingredients table created");
 
     // PRODUCTION LOGS
     await connection.query(`
@@ -205,6 +227,8 @@ async function initDatabase() {
       );
     `);
 
+    console.log("✅ Production logs table created");
+
     // SUPPLIERS
     await connection.query(`
       CREATE TABLE IF NOT EXISTS suppliers (
@@ -219,6 +243,8 @@ async function initDatabase() {
       );
     `);
 
+    console.log("✅ Suppliers table created");
+
     // CUSTOMERS
     await connection.query(`
       CREATE TABLE IF NOT EXISTS customers (
@@ -231,6 +257,8 @@ async function initDatabase() {
         updatedAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
       );
     `);
+
+    console.log("✅ Customers table created");
 
     // PURCHASE ORDERS
     await connection.query(`
@@ -248,6 +276,8 @@ async function initDatabase() {
       );
     `);
 
+    console.log("✅ Purchase orders table created");
+
     // PURCHASE ORDER ITEMS
     await connection.query(`
       CREATE TABLE IF NOT EXISTS purchase_order_items (
@@ -261,6 +291,8 @@ async function initDatabase() {
         FOREIGN KEY (materialId) REFERENCES materials(id)
       );
     `);
+
+    console.log("✅ Purchase order items table created");
 
     console.log("✅ All tables and relationships created successfully.");
 
@@ -279,6 +311,7 @@ async function initDatabase() {
         ('admin', 'Administrator with full access'),
         ('operator', 'Operator with limited access');
       `);
+      console.log("✅ Default roles inserted");
 
       // Insert default permissions
       await connection.query(`
@@ -306,6 +339,7 @@ async function initDatabase() {
         ('manage_roles', 'Manage roles and permissions'),
         ('view_permissions', 'View permissions');
       `);
+      console.log("✅ Default permissions inserted");
 
       // Assign all permissions to admin role
       await connection.query(`
@@ -314,12 +348,14 @@ async function initDatabase() {
         FROM roles r, permissions p 
         WHERE r.name = 'admin';
       `);
+      console.log("✅ Admin role permissions assigned");
 
       await connection.query(`
         INSERT INTO users (name, email, password, role)
         VALUES ('Admin User', 'admin@example.com', '$2b$10$IxhgKfJq1yb900HvtYpmqOj95kl2HidCDdkWQSHI8m5Efkpqbfa22', 'admin')
         ON DUPLICATE KEY UPDATE email = email;
       `);
+      console.log("✅ Admin user created");
 
       // Insert default categories
       await connection.query(`
@@ -328,6 +364,7 @@ async function initDatabase() {
         ('002', 'Packaging'),
         ('003', 'Finished Goods');
       `);
+      console.log("✅ Default categories inserted");
 
       // Insert default unit of measures
       await connection.query(`
@@ -339,6 +376,7 @@ async function initDatabase() {
         ('Piece', 'pc'),
         ('Box', 'box');
       `);
+      console.log("✅ Default unit of measures inserted");
 
       // Small delay to ensure UOM records are committed
       await new Promise(resolve => setTimeout(resolve, 100));
@@ -352,12 +390,14 @@ async function initDatabase() {
         ('Y001', 'Yeast', 'g', 500, 0.5, 100, (SELECT id FROM categories WHERE code = '001'), (SELECT id FROM unit_of_measures WHERE symbol = 'g' LIMIT 1))
         ON DUPLICATE KEY UPDATE name = name;
       `);
+      console.log("✅ Sample materials inserted");
 
       await connection.query(`
         INSERT INTO recipes (name, category, categoryId)
         VALUES ('Bread', 'Bakery', (SELECT id FROM categories WHERE code = '003'))
         ON DUPLICATE KEY UPDATE name = name;
       `);
+      console.log("✅ Sample recipe inserted");
 
       const [rows] = await connection.query(`SELECT id FROM recipes WHERE name='Bread' LIMIT 1;`);
       const recipeId = rows[0]?.id;
@@ -373,6 +413,7 @@ async function initDatabase() {
           (${recipeId}, (SELECT id FROM materials WHERE name='Yeast' LIMIT 1), 10)
           ON DUPLICATE KEY UPDATE recipeId = recipeId;
         `);
+        console.log("✅ Recipe ingredients inserted");
       }
 
       console.log("✅ Sample data inserted successfully!");
@@ -382,13 +423,14 @@ async function initDatabase() {
     }
 
     console.log("🎉 Database setup completed successfully!");
-
     await connection.end();
   } catch (err) {
     console.error("❌ Database initialization failed:", err.message);
     if (connection) await connection.end();
     process.exit(1);
   }
+  
+  console.log("✅ Database initialization completed");
 }
 
 // Test database connection function with retry

@@ -35,4 +35,13 @@ pool.on('error', (error) => {
   console.error('❌ Database pool error:', error.message);
 });
 
+// Add acquire and release events for debugging
+pool.on('acquire', (connection) => {
+  console.log('✅ Connection acquired from pool');
+});
+
+pool.on('release', (connection) => {
+  console.log('✅ Connection released back to pool');
+});
+
 module.exports = pool;

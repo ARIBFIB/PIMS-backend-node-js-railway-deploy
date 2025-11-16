@@ -1,7 +1,9 @@
 require('dotenv').config();
+console.log('🚀 Application starting...');
+
 const app = require('./src/app');
 const { initDatabase, testConnection } = require('./src/config/database');
-const { pool } = require('./src/config/dbPool');
+const pool = require('./src/config/dbPool');
 const bcrypt = require('bcryptjs');
 
 // Import the Railway post-deploy script
@@ -9,11 +11,21 @@ const runRailwayPostDeploy = require('./scripts/railway-post-deploy');
 
 const PORT = parseInt(process.env.PORT) || 4000;
 
+console.log('Environment variables:');
+console.log('- PORT:', process.env.PORT);
+console.log('- Parsed PORT:', PORT);
+console.log('- MYSQLDATABASE:', process.env.MYSQLDATABASE);
+console.log('- MYSQLHOST:', process.env.MYSQLHOST);
+console.log('- MYSQLUSER:', process.env.MYSQLUSER);
+
 // Initialize database before starting server
 async function startServer() {
+  console.log('🚀 Starting server initialization...');
+  
   try {
     // Test database connection first
     const isConnected = await testConnection();
+    console.log('Database connection test result:', isConnected);
     
     if (isConnected) {
       console.log('Initializing database...');
@@ -36,9 +48,13 @@ async function startServer() {
       console.warn('This is normal for Railway deployments where the database may not be ready yet.');
     }
     
+    console.log(`🚀 Starting server on port ${PORT}...`);
     const server = app.listen(PORT, '0.0.0.0', () => {
       console.log(`🚀 Server running on port ${PORT}`);
       console.log(`CORS enabled for all origins`);
+      
+      // Log when the server is ready to accept requests
+      console.log(`✅ Server is ready to accept requests`);
       
       // For Railway deployments, try to initialize database after server starts
       if (process.env.MYSQLDATABASE && !isConnected) {
@@ -65,9 +81,10 @@ async function startServer() {
         }, 5000);
       }
     });
-
-    // Handle server errors
+    
+    // Add error handler for the server
     server.on('error', (error) => {
+      console.error('❌ Server error:', error);
       if (error.syscall !== 'listen') {
         throw error;
       }
@@ -89,6 +106,8 @@ async function startServer() {
           throw error;
       }
     });
+    
+    console.log('✅ Server startup process completed');
   } catch (err) {
     console.error('❌ Failed to start server:', err);
     process.exit(1);

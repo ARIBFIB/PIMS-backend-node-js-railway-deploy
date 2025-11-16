@@ -109,8 +109,26 @@ app.use('/api/users', userRoutes);
 app.use('/api/roles', roleRoutes);
 app.use('/api/permissions', permissionRoutes);
 
-// Health check endpoint
-app.get('/health', async (req, res) => {
+// Simple test endpoint to verify server is working
+app.get('/test', (req, res) => {
+  console.log('Test endpoint called');
+  res.status(200).json({ message: 'Server is working', timestamp: new Date().toISOString() });
+});
+
+// Simple health check endpoint for Railway (fast response)
+app.get('/health', (req, res) => {
+  console.log('Simple health check endpoint called');
+  res.status(200).json({ 
+    status: 'OK', 
+    timestamp: new Date().toISOString(),
+    uptime: process.uptime()
+  });
+});
+
+// Detailed health check endpoint (for manual checking)
+app.get('/health/detailed', async (req, res) => {
+  console.log('Detailed health check endpoint called');
+  
   const healthCheck = {
     status: 'OK',
     timestamp: new Date().toISOString(),
@@ -124,14 +142,16 @@ app.get('/health', async (req, res) => {
     await connection.ping();
     connection.release();
     healthCheck.database = 'connected';
+    console.log('Detailed health check - database connected');
   } catch (error) {
-    console.warn('Health check - database connection failed:', error.message);
+    console.warn('Detailed health check - database connection failed:', error.message);
     healthCheck.database = 'disconnected';
     // Don't fail the health check if database is temporarily unavailable
     // This is common during startup or when database is restarting
   }
 
   // If we can respond to HTTP requests, the service is healthy enough
+  console.log('Detailed health check response:', healthCheck);
   res.status(200).json(healthCheck);
 });
 
