@@ -87,8 +87,15 @@ const updateMaterial = async (req, res) => {
 const getLowStockItems = async (req, res) => {
   try {
     const materials = await Material.getLowStockItems();
-    console.log('Retrieved low stock items:', materials);
-    res.json(materials);
+    
+    // Add status to each material - all items in low stock report should be LOW STOCK
+    const materialsWithStatus = materials.map(material => ({
+      ...material,
+      status: 'LOW STOCK'
+    }));
+    
+    console.log('Retrieved low stock items:', materialsWithStatus);
+    res.json(materialsWithStatus);
   } catch (error) {
     console.error('Get low stock items error:', error);
     res.status(500).json({ message: 'Internal server error' });

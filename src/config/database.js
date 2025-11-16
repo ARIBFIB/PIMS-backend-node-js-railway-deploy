@@ -329,16 +329,16 @@ async function initDatabase() {
         ('003', 'Finished Goods');
       `);
 
-      // Insert default unit of measures
-      await connection.query(`
-        INSERT IGNORE INTO unit_of_measures (name, symbol) VALUES 
-        ('Kilogram', 'kg'),
-        ('Gram', 'g'),
-        ('Liter', 'l'),
-        ('Milliliter', 'ml'),
-        ('Piece', 'pc'),
-        ('Box', 'box');
-      `);
+      // // Insert default unit of measures
+      // await connection.query(`
+      //   INSERT IGNORE INTO unit_of_measures (name, symbol) VALUES 
+      //   ('Kilogram', 'kg'),
+      //   ('Gram', 'g'),
+      //   ('Liter', 'l'),
+      //   ('Milliliter', 'ml'),
+      //   ('Piece', 'pc'),
+      //   ('Box', 'box');
+      // `);
 
       await connection.query(`
         INSERT INTO materials (itemCode, name, unit, quantity, unitPrice, lowStockThreshold, categoryId, uomId) VALUES
