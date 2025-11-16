@@ -28,7 +28,7 @@ const getCustomerById = async (req, res) => {
 
 const createCustomer = async (req, res) => {
   try {
-    const { name, phone, address } = req.body;
+    const { name, email, phone, address } = req.body;
     
     // Validate input
     if (!name) {
@@ -37,6 +37,7 @@ const createCustomer = async (req, res) => {
     
     const customer = await Customer.create({
       name,
+      email,
       phone,
       address
     });
@@ -51,7 +52,7 @@ const createCustomer = async (req, res) => {
 const updateCustomer = async (req, res) => {
   try {
     const { id } = req.params;
-    const { name, phone, address } = req.body;
+    const { name, email, phone, address } = req.body;
     
     // Validate input
     if (!name) {
@@ -60,6 +61,7 @@ const updateCustomer = async (req, res) => {
     
     const customer = await Customer.update(id, {
       name,
+      email,
       phone,
       address
     });

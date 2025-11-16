@@ -62,14 +62,30 @@ class Customer {
   }
 
   static async delete(id) {
+    const connection = await pool.getConnection();
+    
     try {
-      const [result] = await pool.execute(
+      await connection.beginTransaction();
+      
+      // First, set customerId to NULL in production_logs to maintain referential integrity
+      await connection.execute(
+        'UPDATE production_logs SET customerId = NULL WHERE customerId = ?',
+        [id]
+      );
+      
+      // Now delete the customer
+      const [result] = await connection.execute(
         'DELETE FROM customers WHERE id = ?',
         [id]
       );
+      
+      await connection.commit();
       return result.affectedRows > 0;
     } catch (error) {
+      await connection.rollback();
       throw error;
+    } finally {
+      connection.release();
     }
   }
 }
