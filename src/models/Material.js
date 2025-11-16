@@ -153,7 +153,7 @@ class Material {
         FROM materials m 
         LEFT JOIN categories c ON m.categoryId = c.id 
         LEFT JOIN unit_of_measures u ON m.uomId = u.id 
-        WHERE m.quantity <= m.lowStockThreshold
+        WHERE CAST(m.quantity AS DECIMAL(10,2)) <= CAST(m.lowStockThreshold AS DECIMAL(10,2))
       `;
       console.log('Query:', query);
       const [rows] = await pool.execute(query);
@@ -169,7 +169,7 @@ class Material {
       // Try a simpler query as fallback
       try {
         console.log('Trying fallback query without joins...');
-        const [rows] = await pool.execute('SELECT * FROM materials WHERE quantity <= lowStockThreshold');
+        const [rows] = await pool.execute('SELECT * FROM materials WHERE CAST(quantity AS DECIMAL(10,2)) <= CAST(lowStockThreshold AS DECIMAL(10,2))');
         console.log('Fallback query returned', rows.length, 'rows');
         return rows.map(row => ({
           ...row,
