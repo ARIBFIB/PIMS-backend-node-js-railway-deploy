@@ -26,10 +26,15 @@ class Customer {
   static async create(customerData) {
     const { name, email, phone, address } = customerData;
     
+    // Handle undefined values by converting them to null for database
+    const emailValue = email || null;
+    const phoneValue = phone || null;
+    const addressValue = address || null;
+    
     try {
       const [result] = await pool.execute(
         'INSERT INTO customers (name, email, phone, address) VALUES (?, ?, ?, ?)',
-        [name, email, phone, address]
+        [name, emailValue, phoneValue, addressValue]
       );
       return { id: result.insertId, name, email, phone, address };
     } catch (error) {
@@ -40,10 +45,15 @@ class Customer {
   static async update(id, customerData) {
     const { name, email, phone, address } = customerData;
     
+    // Handle undefined values by converting them to null for database
+    const emailValue = email || null;
+    const phoneValue = phone || null;
+    const addressValue = address || null;
+    
     try {
       await pool.execute(
         'UPDATE customers SET name = ?, email = ?, phone = ?, address = ? WHERE id = ?',
-        [name, email, phone, address, id]
+        [name, emailValue, phoneValue, addressValue, id]
       );
       return { id, name, email, phone, address };
     } catch (error) {
