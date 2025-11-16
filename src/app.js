@@ -31,7 +31,8 @@ app.set('trust proxy', 1);
 // Configure CORS with specific options
 const corsOptions = {
   origin: [
-    'https://pims-project-214e1e.netlify.app',
+    // 'https://pims-project-214e1e.netlify.app',
+    'https://6919f5629afbf6133ebe90d7--pims-project-61fb3d.netlify.app',
     'https://pims-project-61fb3d.netlify.app',
     'http://localhost:3000',
     'http://127.0.0.1:3000',
