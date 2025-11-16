@@ -3,6 +3,7 @@ const cors = require('cors');
 const helmet = require('helmet');
 const morgan = require('morgan');
 const rateLimit = require('express-rate-limit');
+const pool = require('./config/dbPool');
 
 const uomRoutes = require('./routes/uom');
 const categoryRoutes = require('./routes/categories');
@@ -109,8 +110,26 @@ app.use('/api/roles', roleRoutes);
 app.use('/api/permissions', permissionRoutes);
 
 // Health check endpoint
-app.get('/health', (req, res) => {
-  res.status(200).json({ status: 'OK' });
+app.get('/health', async (req, res) => {
+  try {
+    // Test database connection
+    const connection = await pool.getConnection();
+    await connection.ping();
+    connection.release();
+    
+    res.status(200).json({ 
+      status: 'OK',
+      timestamp: new Date().toISOString(),
+      database: 'connected'
+    });
+  } catch (error) {
+    console.error('Health check failed:', error.message);
+    res.status(503).json({ 
+      status: 'Service Unavailable',
+      timestamp: new Date().toISOString(),
+      error: error.message
+    });
+  }
 });
 
 // Handle 404

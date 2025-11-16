@@ -329,24 +329,27 @@ async function initDatabase() {
         ('003', 'Finished Goods');
       `);
 
-      // // Insert default unit of measures
-      // await connection.query(`
-      //   INSERT IGNORE INTO unit_of_measures (name, symbol) VALUES 
-      //   ('Kilogram', 'kg'),
-      //   ('Gram', 'g'),
-      //   ('Liter', 'l'),
-      //   ('Milliliter', 'ml'),
-      //   ('Piece', 'pc'),
-      //   ('Box', 'box');
-      // `);
+      // Insert default unit of measures
+      await connection.query(`
+        INSERT IGNORE INTO unit_of_measures (name, symbol) VALUES 
+        ('Kilogram', 'kg'),
+        ('Gram', 'g'),
+        ('Liter', 'l'),
+        ('Milliliter', 'ml'),
+        ('Piece', 'pc'),
+        ('Box', 'box');
+      `);
+
+      // Small delay to ensure UOM records are committed
+      await new Promise(resolve => setTimeout(resolve, 100));
 
       await connection.query(`
         INSERT INTO materials (itemCode, name, unit, quantity, unitPrice, lowStockThreshold, categoryId, uomId) VALUES
-        ('F001', 'Flour', 'kg', 200, 120, 50, (SELECT id FROM categories WHERE code = '001'), (SELECT id FROM unit_of_measures WHERE symbol = 'kg')),
-        ('S001', 'Sugar', 'kg', 100, 140, 30, (SELECT id FROM categories WHERE code = '001'), (SELECT id FROM unit_of_measures WHERE symbol = 'kg')),
-        ('SL01', 'Salt', 'kg', 50, 20, 10, (SELECT id FROM categories WHERE code = '001'), (SELECT id FROM unit_of_measures WHERE symbol = 'kg')),
-        ('O001', 'Oil', 'l', 30, 150, 5, (SELECT id FROM categories WHERE code = '001'), (SELECT id FROM unit_of_measures WHERE symbol = 'l')),
-        ('Y001', 'Yeast', 'g', 500, 0.5, 100, (SELECT id FROM categories WHERE code = '001'), (SELECT id FROM unit_of_measures WHERE symbol = 'g'))
+        ('F001', 'Flour', 'kg', 200, 120, 50, (SELECT id FROM categories WHERE code = '001'), (SELECT id FROM unit_of_measures WHERE symbol = 'kg' LIMIT 1)),
+        ('S001', 'Sugar', 'kg', 100, 140, 30, (SELECT id FROM categories WHERE code = '001'), (SELECT id FROM unit_of_measures WHERE symbol = 'kg' LIMIT 1)),
+        ('SL01', 'Salt', 'kg', 50, 20, 10, (SELECT id FROM categories WHERE code = '001'), (SELECT id FROM unit_of_measures WHERE symbol = 'kg' LIMIT 1)),
+        ('O001', 'Oil', 'l', 30, 150, 5, (SELECT id FROM categories WHERE code = '001'), (SELECT id FROM unit_of_measures WHERE symbol = 'l' LIMIT 1)),
+        ('Y001', 'Yeast', 'g', 500, 0.5, 100, (SELECT id FROM categories WHERE code = '001'), (SELECT id FROM unit_of_measures WHERE symbol = 'g' LIMIT 1))
         ON DUPLICATE KEY UPDATE name = name;
       `);
 
