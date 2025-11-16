@@ -6,6 +6,11 @@ const authenticate = (req, res, next) => {
     const token = req.header('Authorization')?.replace('Bearer ', '');
     
     if (!token) {
+      // Set CORS headers for error responses
+      res.header('Access-Control-Allow-Origin', req.headers.origin || '*');
+      res.header('Access-Control-Allow-Credentials', 'true');
+      res.header('Access-Control-Allow-Headers', 'Origin, X-Requested-With, Content-Type, Accept, Authorization');
+      res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, PATCH, OPTIONS');
       return res.status(401).json({ message: 'Access denied. No token provided.' });
     }
     
@@ -13,6 +18,11 @@ const authenticate = (req, res, next) => {
     req.user = decoded;
     next();
   } catch (error) {
+    // Set CORS headers for error responses
+    res.header('Access-Control-Allow-Origin', req.headers.origin || '*');
+    res.header('Access-Control-Allow-Credentials', 'true');
+    res.header('Access-Control-Allow-Headers', 'Origin, X-Requested-With, Content-Type, Accept, Authorization');
+    res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, PATCH, OPTIONS');
     res.status(401).json({ message: 'Invalid token.' });
   }
 };
@@ -27,6 +37,11 @@ const authorize = (...roles) => {
       
       // Check if user is authenticated
       if (!req.user) {
+        // Set CORS headers for error responses
+        res.header('Access-Control-Allow-Origin', req.headers.origin || '*');
+        res.header('Access-Control-Allow-Credentials', 'true');
+        res.header('Access-Control-Allow-Headers', 'Origin, X-Requested-With, Content-Type, Accept, Authorization');
+        res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, PATCH, OPTIONS');
         return res.status(401).json({ message: 'Access denied. No token provided.' });
       }
       
@@ -38,8 +53,18 @@ const authorize = (...roles) => {
       // For more granular permission checking, we could also check individual permissions here
       // For now, we'll just check roles
       
+      // Set CORS headers for error responses
+      res.header('Access-Control-Allow-Origin', req.headers.origin || '*');
+      res.header('Access-Control-Allow-Credentials', 'true');
+      res.header('Access-Control-Allow-Headers', 'Origin, X-Requested-With, Content-Type, Accept, Authorization');
+      res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, PATCH, OPTIONS');
       res.status(403).json({ message: 'Access denied. Insufficient permissions.' });
     } catch (error) {
+      // Set CORS headers for error responses
+      res.header('Access-Control-Allow-Origin', req.headers.origin || '*');
+      res.header('Access-Control-Allow-Credentials', 'true');
+      res.header('Access-Control-Allow-Headers', 'Origin, X-Requested-With, Content-Type, Accept, Authorization');
+      res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, PATCH, OPTIONS');
       res.status(500).json({ message: 'Internal server error.' });
     }
   };
@@ -51,6 +76,11 @@ const checkPermission = (permissionName) => {
     try {
       // Check if user is authenticated
       if (!req.user) {
+        // Set CORS headers for error responses
+        res.header('Access-Control-Allow-Origin', req.headers.origin || '*');
+        res.header('Access-Control-Allow-Credentials', 'true');
+        res.header('Access-Control-Allow-Headers', 'Origin, X-Requested-With, Content-Type, Accept, Authorization');
+        res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, PATCH, OPTIONS');
         return res.status(401).json({ message: 'Access denied. No token provided.' });
       }
       
@@ -62,8 +92,18 @@ const checkPermission = (permissionName) => {
         return next();
       }
       
+      // Set CORS headers for error responses
+      res.header('Access-Control-Allow-Origin', req.headers.origin || '*');
+      res.header('Access-Control-Allow-Credentials', 'true');
+      res.header('Access-Control-Allow-Headers', 'Origin, X-Requested-With, Content-Type, Accept, Authorization');
+      res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, PATCH, OPTIONS');
       res.status(403).json({ message: 'Access denied. Insufficient permissions.' });
     } catch (error) {
+      // Set CORS headers for error responses
+      res.header('Access-Control-Allow-Origin', req.headers.origin || '*');
+      res.header('Access-Control-Allow-Credentials', 'true');
+      res.header('Access-Control-Allow-Headers', 'Origin, X-Requested-With, Content-Type, Accept, Authorization');
+      res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, PATCH, OPTIONS');
       res.status(500).json({ message: 'Internal server error.' });
     }
   };
