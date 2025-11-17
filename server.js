@@ -1,33 +1,14 @@
 require('dotenv').config();
-const app = require('./src/app');
 
-const PORT = process.env.PORT || 4000;
+// Create a simple express app with just the ping endpoint
+const express = require('express');
+const app = express();
 
-const server = app.listen(PORT, '0.0.0.0', () => {
-  console.log(`Server running on port ${PORT}`);
-  console.log(`CORS enabled for all origins`);
-});
+// Add the ping endpoint for Railway health checks
+app.get('/ping', (req, res) => res.send('pong'));
 
-// Handle server errors
-server.on('error', (error) => {
-  if (error.syscall !== 'listen') {
-    throw error;
-  }
+const PORT = process.env.PORT || 5000;
 
-  const bind = typeof PORT === 'string'
-    ? 'Pipe ' + PORT
-    : 'Port ' + PORT;
-
-  switch (error.code) {
-    case 'EACCES':
-      console.error(bind + ' requires elevated privileges');
-      process.exit(1);
-      break;
-    case 'EADDRINUSE':
-      console.error(bind + ' is already in use');
-      process.exit(1);
-      break;
-    default:
-      throw error;
-  }
+app.listen(PORT, '0.0.0.0', () => {
+  console.log(`🚀 Server running on port ${PORT}`);
 });
