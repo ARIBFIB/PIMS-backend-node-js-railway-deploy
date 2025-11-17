@@ -1,22 +1,13 @@
-// Minimal server for Railway deployment with Express v4
-const express = require('express');
-const cors = require('cors');
-const app = express();
+// Server for Railway deployment - using the full application
+require('dotenv').config();
 
-// Enable CORS for all origins
-app.use(cors());
+const app = require('./src/app');
 
-// Parse JSON bodies
-app.use(express.json());
-
-// Simple health check endpoint
-app.get('/ping', (req, res) => {
-  res.status(200).send('pong');
-});
-
-// Use Railway's PORT or default to 5000
-const PORT = process.env.PORT || 5000;
+// Use Railway's PORT or default to 4000
+const PORT = process.env.PORT || 4000;
 
 app.listen(PORT, '0.0.0.0', () => {
   console.log(`Server listening on port ${PORT}`);
+  console.log('All API routes are available');
+  console.log('Health check endpoint: /ping');
 });
