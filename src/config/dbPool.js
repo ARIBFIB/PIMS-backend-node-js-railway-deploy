@@ -11,9 +11,7 @@ const dbConfig = {
   connectionLimit: 10,
   queueLimit: 0,
   charset: 'utf8mb4',
-  connectTimeout: 20000,
-  acquireTimeout: 20000,
-  timeout: 20000
+  connectTimeout: 20000
 };
 
 console.log('Database configuration:', {

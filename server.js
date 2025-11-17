@@ -3,13 +3,13 @@ require('dotenv').config();
 
 console.log('Starting server...');
 
+// Use Railway's PORT or default to 4000
+const PORT = process.env.PORT || 4000;
+
+console.log(`Attempting to start server on port ${PORT}`);
+
 try {
   const app = require('./src/app');
-  
-  // Use Railway's PORT or default to 4000
-  const PORT = process.env.PORT || 4000;
-  
-  console.log(`Attempting to start server on port ${PORT}`);
   
   const server = app.listen(PORT, '0.0.0.0', () => {
     console.log(`✅ Server successfully listening on port ${PORT}`);
