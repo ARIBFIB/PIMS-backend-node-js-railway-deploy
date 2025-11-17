@@ -69,14 +69,13 @@ app.use((req, res, next) => {
   next();
 });
 
-// Rate limiting with more appropriate configuration for a dashboard application
+// Rate limiting
 const limiter = rateLimit({
   windowMs: 15 * 60 * 1000, // 15 minutes
-  max: 500, // Increased limit to 500 requests per windowMs to accommodate dashboard data fetching
-  message: 'Too many requests from this IP, please try again later.',
-  standardHeaders: true, // Return rate limit info in the `RateLimit-*` headers
-  legacyHeaders: false, // Disable the `X-RateLimit-*` headers
+  max: 100, // limit each IP to 100 requests per windowMs
+  message: 'Too many requests from this IP, please try again later.'
 });
+
 
 // Separate rate limiter for auth endpoints (login, register, etc.) to prevent abuse
 const authLimiter = rateLimit({
@@ -85,7 +84,7 @@ const authLimiter = rateLimit({
   message: 'Too many authentication attempts, please try again later.',
   standardHeaders: true,
   legacyHeaders: false,
-});
+}); 
 
 // Middlewares
 app.use(helmet());
