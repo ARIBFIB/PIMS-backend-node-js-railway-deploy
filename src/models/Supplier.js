@@ -51,36 +51,32 @@ class Supplier {
   }
 
   static async delete(id) {
-    const connection = await pool.getConnection();
-    
     try {
-      await connection.beginTransaction();
+      // Check if supplier exists
+      const supplier = await this.findById(id);
+      if (!supplier) {
+        throw new Error('Supplier not found');
+      }
       
-      // First delete related purchase order items
-      await connection.execute(
-        'DELETE poi FROM purchase_order_items poi JOIN purchase_orders po ON poi.purchaseOrderId = po.id WHERE po.supplierId = ?',
+      // Check if supplier has any associated purchase orders
+      const [purchaseOrderRows] = await pool.execute(
+        'SELECT COUNT(*) as count FROM purchase_orders WHERE supplierId = ?',
         [id]
       );
       
-      // Then delete related purchase orders
-      await connection.execute(
-        'DELETE FROM purchase_orders WHERE supplierId = ?',
-        [id]
-      );
+      if (purchaseOrderRows[0].count > 0) {
+        throw new Error(`Cannot delete supplier because it is associated with ${purchaseOrderRows[0].count} purchase order(s). Please delete the associated purchase orders first.`);
+      }
       
-      // Finally delete the supplier
-      const [result] = await connection.execute(
+      // If no purchase orders, proceed with deletion
+      const [result] = await pool.execute(
         'DELETE FROM suppliers WHERE id = ?',
         [id]
       );
       
-      await connection.commit();
       return result.affectedRows > 0;
     } catch (error) {
-      await connection.rollback();
       throw error;
-    } finally {
-      connection.release();
     }
   }
 }

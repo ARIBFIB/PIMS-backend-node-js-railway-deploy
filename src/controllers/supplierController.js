@@ -81,7 +81,7 @@ const deleteSupplier = async (req, res) => {
       return res.status(404).json({ message: 'Supplier not found' });
     }
     
-    // Delete the supplier
+    // Attempt to delete the supplier
     const deleted = await Supplier.delete(id);
     if (deleted) {
       res.json({ message: 'Supplier deleted successfully', name: supplier.name });
@@ -90,6 +90,10 @@ const deleteSupplier = async (req, res) => {
     }
   } catch (error) {
     console.error('Delete supplier error:', error);
+    // Return a user-friendly error message for constraint violations
+    if (error.message.includes('Cannot delete supplier')) {
+      return res.status(400).json({ message: error.message });
+    }
     res.status(500).json({ message: 'Internal server error' });
   }
 };
