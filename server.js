@@ -1,6 +1,10 @@
-// Ultra-minimal server for Railway deployment
+// Ultra-minimal server for Railway deployment with CORS support
 const express = require('express');
+const cors = require('cors');
 const app = express();
+
+// Enable CORS for all origins (you can restrict this later)
+app.use(cors());
 
 // Simple health check endpoint
 app.get('/ping', (req, res) => {
