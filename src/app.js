@@ -1,11 +1,8 @@
 const express = require('express');
 const app = express();
 
-// Add an immediate health check endpoint at the very beginning
-app.get('/ping', (req, res) => {
-  console.log('Immediate ping endpoint called');
-  res.status(200).json({ status: 'OK', message: 'Server is responding', timestamp: new Date().toISOString() });
-});
+// Add a simple ping endpoint for Railway health checks (must be at the top)
+app.get('/ping', (req, res) => res.send('pong'));
 
 const cors = require('cors');
 const helmet = require('helmet');
@@ -38,7 +35,9 @@ app.set('trust proxy', 1);
 // Configure CORS with specific options
 const corsOptions = {
   origin: [
+    // 'https://pims-project-214e1e.netlify.app',
     'https://pims-project-61fb3d.netlify.app',
+    'https://6919f5629afbf6133ebe90d7--pims-project-61fb3d.netlify.app',
     'http://localhost:3000',
     'http://127.0.0.1:3000',
     'http://localhost:5173',
