@@ -1,10 +1,26 @@
-// Ultra-minimal server for Railway deployment with CORS support
+// Ultra-minimal server for Railway deployment with comprehensive CORS support
 const express = require('express');
 const cors = require('cors');
 const app = express();
 
-// Enable CORS for all origins (you can restrict this later)
-app.use(cors());
+// Configure CORS for your specific frontend domains
+const corsOptions = {
+  origin: [
+    'https://pims-project-61fb3d.netlify.app',
+    'https://6919f5629afbf6133ebe90d7--pims-project-61fb3d.netlify.app',
+    'http://localhost:3000',
+    'http://localhost:5173'
+  ],
+  credentials: true,
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization'],
+  optionsSuccessStatus: 200
+};
+
+app.use(cors(corsOptions));
+
+// Handle preflight requests explicitly
+app.options('*', cors(corsOptions));
 
 // Simple health check endpoint
 app.get('/ping', (req, res) => {
