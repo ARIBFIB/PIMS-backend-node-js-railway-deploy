@@ -24,10 +24,22 @@ const getInventoryReport = async (req, res) => {
     const materials = await Material.getAll();
     
     // Add status to each material
-    const materialsWithStatus = materials.map(material => ({
-      ...material,
-      status: parseFloat(material.quantity) <= parseFloat(material.lowStockThreshold) ? 'LOW STOCK' : 'Normal'
-    }));
+    const materialsWithStatus = materials.map(material => {
+      const quantity = parseFloat(String(material.quantity));
+      const threshold = parseFloat(String(material.lowStockThreshold));
+      let status = 'Normal';
+      
+      if (quantity < threshold) {
+        status = 'LOW STOCK';
+      } else if (quantity === threshold) {
+        status = 'NORMAL';
+      }
+      
+      return {
+        ...material,
+        status
+      };
+    });
     
     res.json(materialsWithStatus);
   } catch (error) {
