@@ -69,15 +69,14 @@ app.use((req, res, next) => {
 // Rate limiting
 const limiter = rateLimit({
   windowMs: 15 * 60 * 1000, // 15 minutes
-  max: 100, // limit each IP to 100 requests per windowMs
+  max: 500, // Increased limit to 500 requests per windowMs for general API endpoints
   message: 'Too many requests from this IP, please try again later.'
 });
-
 
 // Separate rate limiter for auth endpoints (login, register, etc.) to prevent abuse
 const authLimiter = rateLimit({
   windowMs: 15 * 60 * 1000, // 15 minutes
-  max: 20, // More restrictive limit for auth endpoints
+  max: 100, // Increased limit to 100 requests per 15 minutes for auth endpoints
   message: 'Too many authentication attempts, please try again later.',
   standardHeaders: true,
   legacyHeaders: false,
