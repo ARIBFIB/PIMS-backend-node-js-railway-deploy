@@ -51,14 +51,36 @@ class Supplier {
   }
 
   static async delete(id) {
+    const connection = await pool.getConnection();
+    
     try {
-      const [result] = await pool.execute(
+      await connection.beginTransaction();
+      
+      // First delete related purchase order items
+      await connection.execute(
+        'DELETE poi FROM purchase_order_items poi JOIN purchase_orders po ON poi.purchaseOrderId = po.id WHERE po.supplierId = ?',
+        [id]
+      );
+      
+      // Then delete related purchase orders
+      await connection.execute(
+        'DELETE FROM purchase_orders WHERE supplierId = ?',
+        [id]
+      );
+      
+      // Finally delete the supplier
+      const [result] = await connection.execute(
         'DELETE FROM suppliers WHERE id = ?',
         [id]
       );
+      
+      await connection.commit();
       return result.affectedRows > 0;
     } catch (error) {
+      await connection.rollback();
       throw error;
+    } finally {
+      connection.release();
     }
   }
 }
