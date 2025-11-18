@@ -7,7 +7,7 @@ class PurchaseOrder {
       const [rows] = await pool.execute(`
         SELECT po.*, s.id as supplierId, s.name as supplierName 
         FROM purchase_orders po 
-        JOIN suppliers s ON po.supplierId = s.id 
+        LEFT JOIN suppliers s ON po.supplierId = s.id 
         ORDER BY po.createdAt DESC
       `);
       
@@ -22,10 +22,15 @@ class PurchaseOrder {
         order.items = items;
         
         // Format supplier as object to match frontend expectations
-        order.supplier = {
-          id: order.supplierId,
-          name: order.supplierName
-        };
+        // Handle case where supplier might not exist
+        if (order.supplierId && order.supplierName) {
+          order.supplier = {
+            id: order.supplierId,
+            name: order.supplierName
+          };
+        } else {
+          order.supplier = null;
+        }
         
         // Remove duplicate fields
         delete order.supplierId;
@@ -43,33 +48,38 @@ class PurchaseOrder {
       const [orderRows] = await pool.execute(`
         SELECT po.*, s.id as supplierId, s.name as supplierName 
         FROM purchase_orders po 
-        JOIN suppliers s ON po.supplierId = s.id 
+        LEFT JOIN suppliers s ON po.supplierId = s.id 
         WHERE po.id = ?
       `, [id]);
-      
+    
       if (orderRows.length === 0) return null;
-      
+    
       const order = orderRows[0];
-      
+    
       const [items] = await pool.execute(`
         SELECT poi.*, m.name as materialName 
         FROM purchase_order_items poi 
         JOIN materials m ON poi.materialId = m.id 
         WHERE poi.purchaseOrderId = ?
       `, [id]);
-      
+    
       order.items = items;
-      
+    
       // Format supplier as object to match frontend expectations
-      order.supplier = {
-        id: order.supplierId,
-        name: order.supplierName
-      };
-      
+      // Handle case where supplier might not exist
+      if (order.supplierId && order.supplierName) {
+        order.supplier = {
+          id: order.supplierId,
+          name: order.supplierName
+        };
+      } else {
+        order.supplier = null;
+      }
+    
       // Remove duplicate fields
       delete order.supplierId;
       delete order.supplierName;
-      
+    
       return order;
     } catch (error) {
       throw error;

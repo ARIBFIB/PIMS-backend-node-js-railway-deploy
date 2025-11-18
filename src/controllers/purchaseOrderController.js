@@ -13,16 +13,21 @@ const getAllPurchaseOrders = async (req, res) => {
 const getPurchaseOrderById = async (req, res) => {
   try {
     const { id } = req.params;
+    console.log(`Fetching purchase order with ID: ${id}`);
+    
     const order = await PurchaseOrder.findById(id);
     
+    console.log(`Found order:`, order);
+    
     if (!order) {
+      console.log(`Purchase order with ID ${id} not found`);
       return res.status(404).json({ message: 'Purchase order not found' });
     }
     
     res.json(order);
   } catch (error) {
     console.error('Get purchase order error:', error);
-    res.status(500).json({ message: 'Internal server error' });
+    res.status(500).json({ message: 'Internal server error', error: error.message });
   }
 };
 
