@@ -272,11 +272,6 @@ class PurchaseOrder {
       
       const status = orderRows[0].status;
       
-      // Allow deletion of pending and approved orders, but not cancelled orders
-      if (status === 'CANCELLED') {
-        throw new Error('Cancelled orders cannot be deleted');
-      }
-      
       // If it's an approved order, we need to revert the material quantities
       if (status === 'APPROVED') {
         // Get the purchase order with items
