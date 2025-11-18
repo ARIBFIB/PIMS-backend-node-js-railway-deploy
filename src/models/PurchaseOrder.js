@@ -260,7 +260,7 @@ class PurchaseOrder {
     try {
       await connection.beginTransaction();
       
-      // Check if order is still pending
+      // Check if order exists and get its status
       const [orderRows] = await connection.execute(
         'SELECT status FROM purchase_orders WHERE id = ?',
         [id]
@@ -270,8 +270,38 @@ class PurchaseOrder {
         throw new Error('Purchase order not found');
       }
       
-      if (orderRows[0].status !== 'PENDING') {
-        throw new Error('Only pending orders can be deleted');
+      const status = orderRows[0].status;
+      
+      // Allow deletion of pending and approved orders, but not cancelled orders
+      if (status === 'CANCELLED') {
+        throw new Error('Cancelled orders cannot be deleted');
+      }
+      
+      // If it's an approved order, we need to revert the material quantities
+      if (status === 'APPROVED') {
+        // Get the purchase order with items
+        const order = await this.findById(id);
+        
+        // Revert material quantities (subtract the quantities that were added during approval)
+        for (const item of order.items) {
+          const material = await Material.findById(item.materialId);
+          if (material) {
+            // Ensure quantities are properly parsed as numbers
+            const materialQuantity = typeof material.quantity === 'string' 
+              ? parseFloat(material.quantity.replace(/[^0-9.-]+/g, '')) 
+              : Number(material.quantity);
+              
+            const itemQuantity = typeof item.quantity === 'string' 
+              ? parseFloat(item.quantity.replace(/[^0-9.-]+/g, '')) 
+              : Number(item.quantity);
+            
+            // Validate that parsed quantities are valid numbers
+            if (!isNaN(materialQuantity) && !isNaN(itemQuantity)) {
+              const newQuantity = materialQuantity - itemQuantity;
+              await Material.updateQuantity(item.materialId, newQuantity);
+            }
+          }
+        }
       }
       
       // Delete order items
