@@ -16,6 +16,7 @@ router.put('/:id', authenticate, [
   body('items').isArray({ min: 1 }).withMessage('At least one item is required')
 ], purchaseOrderController.updatePurchaseOrder);
 router.patch('/:id/approve', authenticate, purchaseOrderController.approvePurchaseOrder);
+router.patch('/:id/disapprove', authenticate, purchaseOrderController.disapprovePurchaseOrder);
 router.delete('/:id', authenticate, purchaseOrderController.deletePurchaseOrder);
 
 module.exports = router;

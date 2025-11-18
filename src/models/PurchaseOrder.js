@@ -295,6 +295,62 @@ class PurchaseOrder {
       connection.release();
     }
   }
+
+  static async disapprove(id) {
+    const connection = await pool.getConnection();
+    
+    try {
+      await connection.beginTransaction();
+      
+      // Get the purchase order with items
+      const order = await this.findById(id);
+      if (!order) {
+        throw new Error('Purchase order not found');
+      }
+      
+      if (order.status !== 'APPROVED') {
+        throw new Error('Only approved orders can be disapproved');
+      }
+      
+      // Revert material quantities (subtract the quantities that were added during approval)
+      for (const item of order.items) {
+        const material = await Material.findById(item.materialId);
+        if (!material) {
+          throw new Error(`Material with ID ${item.materialId} not found`);
+        }
+        // Ensure quantities are properly parsed as numbers to avoid malformed decimal values
+        const materialQuantity = typeof material.quantity === 'string' 
+          ? parseFloat(material.quantity.replace(/[^0-9.-]+/g, '')) 
+          : Number(material.quantity);
+          
+        const itemQuantity = typeof item.quantity === 'string' 
+          ? parseFloat(item.quantity.replace(/[^0-9.-]+/g, '')) 
+          : Number(item.quantity);
+        
+        // Validate that parsed quantities are valid numbers
+        if (isNaN(materialQuantity) || isNaN(itemQuantity)) {
+          throw new Error(`Invalid quantity value for material ID ${item.materialId}: material.quantity=${material.quantity}, item.quantity=${item.quantity}`);
+        }
+        
+        const newQuantity = materialQuantity - itemQuantity;
+        await Material.updateQuantity(item.materialId, newQuantity);
+      }
+      
+      // Update order status to CANCELLED
+      await connection.execute(
+        'UPDATE purchase_orders SET status = ? WHERE id = ?',
+        ['CANCELLED', id]
+      );
+      
+      await connection.commit();
+      return { id, status: 'CANCELLED' };
+    } catch (error) {
+      await connection.rollback();
+      throw error;
+    } finally {
+      connection.release();
+    }
+  }
 }
 
 module.exports = PurchaseOrder;

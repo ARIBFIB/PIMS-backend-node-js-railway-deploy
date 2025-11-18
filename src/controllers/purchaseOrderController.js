@@ -105,11 +105,25 @@ const deletePurchaseOrder = async (req, res) => {
   }
 };
 
+const disapprovePurchaseOrder = async (req, res) => {
+  try {
+    const { id } = req.params;
+    
+    const result = await PurchaseOrder.disapprove(id);
+    
+    res.json({ message: 'Purchase order disapproved successfully', result });
+  } catch (error) {
+    console.error('Disapprove purchase order error:', error);
+    res.status(500).json({ message: error.message || 'Internal server error' });
+  }
+};
+
 module.exports = {
   getAllPurchaseOrders,
   getPurchaseOrderById,
   createPurchaseOrder,
   updatePurchaseOrder,
   approvePurchaseOrder,
-  deletePurchaseOrder
+  deletePurchaseOrder,
+  disapprovePurchaseOrder
 };
