@@ -198,7 +198,7 @@ class PurchaseOrder {
     try {
       await connection.beginTransaction();
       
-      // Check if order is still pending
+      // Check if order exists
       const [orderRows] = await connection.execute(
         'SELECT status FROM purchase_orders WHERE id = ?',
         [id]
@@ -208,9 +208,8 @@ class PurchaseOrder {
         throw new Error('Purchase order not found');
       }
       
-      if (orderRows[0].status !== 'PENDING') {
-        throw new Error('Only pending orders can be updated');
-      }
+      // Allow updating orders in any status
+      // No status check needed here
       
       // Calculate new subtotal
       let subtotal = 0;
