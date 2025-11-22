@@ -4,9 +4,10 @@ class Material {
   static async getAll() {
     try {
       const query = `
-        SELECT m.*, c.name as categoryName, u.name as uomName, u.symbol as uomSymbol 
+        SELECT m.*, c.name as categoryName, sc.name as subCategoryName, u.name as uomName, u.symbol as uomSymbol 
         FROM materials m 
         LEFT JOIN categories c ON m.categoryId = c.id 
+        LEFT JOIN sub_categories sc ON m.subCategoryId = sc.id
         LEFT JOIN unit_of_measures u ON m.uomId = u.id 
         ORDER BY m.name
       `;
@@ -28,7 +29,7 @@ class Material {
     try {
       console.log('Executing Material.findById for ID:', id);
       const [rows] = await pool.execute(
-        'SELECT m.*, c.name as categoryName, u.name as uomName, u.symbol as uomSymbol FROM materials m LEFT JOIN categories c ON m.categoryId = c.id LEFT JOIN unit_of_measures u ON m.uomId = u.id WHERE m.id = ?',
+        'SELECT m.*, c.name as categoryName, sc.name as subCategoryName, u.name as uomName, u.symbol as uomSymbol FROM materials m LEFT JOIN categories c ON m.categoryId = c.id LEFT JOIN sub_categories sc ON m.subCategoryId = sc.id LEFT JOIN unit_of_measures u ON m.uomId = u.id WHERE m.id = ?',
         [id]
       );
       console.log('Material.findById query returned', rows.length, 'rows');
@@ -44,12 +45,12 @@ class Material {
   }
 
   static async create(materialData) {
-    const { name, unit, categoryId, uomId, quantity, lowStockThreshold } = materialData;
+    const { name, unit, categoryId, subCategoryId, uomId, quantity, lowStockThreshold } = materialData;
     try {
       console.log('Executing Material.create with data:', materialData);
       const [result] = await pool.execute(
-        'INSERT INTO materials (name, unit, categoryId, uomId, quantity, lowStockThreshold) VALUES (?, ?, ?, ?, ?, ?)',
-        [name, unit || 'N/A', categoryId || null, uomId || null, quantity || 0, lowStockThreshold]
+        'INSERT INTO materials (name, unit, categoryId, subCategoryId, uomId, quantity, lowStockThreshold) VALUES (?, ?, ?, ?, ?, ?, ?)',
+        [name, unit || 'N/A', categoryId || null, subCategoryId || null, uomId || null, quantity || 0, lowStockThreshold]
       );
       console.log('Material.create inserted with ID:', result.insertId);
       return { id: result.insertId, ...materialData };
@@ -64,7 +65,7 @@ class Material {
   }
 
   static async update(id, materialData) {
-    const { name, categoryId, uomId, lowStockThreshold } = materialData;
+    const { name, categoryId, subCategoryId, uomId, lowStockThreshold } = materialData;
     
     // Build dynamic query based on provided fields
     const fields = [];
@@ -77,6 +78,10 @@ class Material {
     if (categoryId !== undefined) {
       fields.push('categoryId = ?');
       values.push(categoryId || null);
+    }
+    if (subCategoryId !== undefined) {
+      fields.push('subCategoryId = ?');
+      values.push(subCategoryId || null);
     }
     if (uomId !== undefined) {
       fields.push('uomId = ?');

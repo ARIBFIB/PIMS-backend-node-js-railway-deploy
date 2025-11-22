@@ -82,10 +82,12 @@ CREATE TABLE IF NOT EXISTS materials (
   unitPrice DECIMAL(10, 2) NOT NULL DEFAULT 0,
   lowStockThreshold DECIMAL(10, 3) NOT NULL DEFAULT 0,
   categoryId INT,
+  subCategoryId INT,
   uomId INT,
   createdAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
   updatedAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
   FOREIGN KEY (categoryId) REFERENCES categories(id),
+  FOREIGN KEY (subCategoryId) REFERENCES sub_categories(id) ON DELETE SET NULL,
   FOREIGN KEY (uomId) REFERENCES unit_of_measures(id)
 );
 

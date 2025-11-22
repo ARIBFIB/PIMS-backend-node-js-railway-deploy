@@ -87,6 +87,24 @@ async function runRailwayPostDeploy() {
       }
     }
     
+    // Check if subCategoryId column exists in materials table
+    console.log('🔍 Checking if subCategoryId column exists in materials table...');
+    const [materialColumns] = await connection.execute("SHOW COLUMNS FROM materials LIKE 'subCategoryId'");
+    
+    console.log('📊 SHOW COLUMNS result:', materialColumns);
+    
+    if (materialColumns.length === 0) {
+      console.log('➕ Adding subCategoryId column to materials table...');
+      await connection.execute(`
+        ALTER TABLE materials 
+        ADD COLUMN subCategoryId INT NULL,
+        ADD FOREIGN KEY (subCategoryId) REFERENCES sub_categories(id) ON DELETE SET NULL
+      `);
+      console.log('✅ Successfully added subCategoryId column to materials table');
+    } else {
+      console.log('✅ subCategoryId column already exists in materials table');
+    }
+    
     await connection.end();
     console.log('✅ Database connection closed');
     console.log('🎉 Railway post-deploy setup completed successfully!');
