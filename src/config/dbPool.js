@@ -16,7 +16,9 @@ const dbConfig = {
   connectionLimit: 10,
   queueLimit: 0,
   charset: 'utf8mb4',
-  connectTimeout: 20000
+  connectTimeout: 20000,
+  acquireTimeout: 20000,
+  timeout: 20000
 };
 
 console.log('🔧 Database pool configuration:', {
@@ -53,5 +55,27 @@ pool.on('acquire', (connection) => {
 pool.on('release', (connection) => {
   console.log('✅ Connection released back to pool');
 });
+
+// Test the database connection
+async function testConnection() {
+  let connection;
+  try {
+    console.log('🔍 Testing database connection...');
+    connection = await pool.getConnection();
+    await connection.ping();
+    console.log('✅ Database connection test successful');
+    connection.release();
+    return true;
+  } catch (error) {
+    console.error('❌ Database connection test failed:', error.message);
+    if (connection) {
+      connection.release();
+    }
+    return false;
+  }
+}
+
+// Run the test connection immediately
+testConnection().catch(console.error);
 
 module.exports = pool;

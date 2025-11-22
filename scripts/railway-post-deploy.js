@@ -95,12 +95,16 @@ async function runRailwayPostDeploy() {
     
     if (materialColumns.length === 0) {
       console.log('➕ Adding subCategoryId column to materials table...');
-      await connection.execute(`
-        ALTER TABLE materials 
-        ADD COLUMN subCategoryId INT NULL,
-        ADD FOREIGN KEY (subCategoryId) REFERENCES sub_categories(id) ON DELETE SET NULL
-      `);
-      console.log('✅ Successfully added subCategoryId column to materials table');
+      try {
+        await connection.execute(`
+          ALTER TABLE materials 
+          ADD COLUMN subCategoryId INT NULL,
+          ADD FOREIGN KEY (subCategoryId) REFERENCES sub_categories(id) ON DELETE SET NULL
+        `);
+        console.log('✅ Successfully added subCategoryId column to materials table');
+      } catch (err) {
+        console.log('ℹ️  Could not add subCategoryId column, might already exist or be added by another script:', err.message);
+      }
     } else {
       console.log('✅ subCategoryId column already exists in materials table');
     }

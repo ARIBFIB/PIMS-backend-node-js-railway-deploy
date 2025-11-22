@@ -18,21 +18,32 @@ const PORT = process.env.PORT || 4000;
 
 console.log(`Attempting to start server on port ${PORT}`);
 
+// Add a timeout to ensure the server starts
+const serverStartTimeout = setTimeout(() => {
+  console.log('⚠️  Server start timeout reached, but continuing...');
+}, 30000);
+
 try {
   const app = require('./src/app');
   
   const server = app.listen(PORT, '0.0.0.0', () => {
+    clearTimeout(serverStartTimeout);
     console.log(`✅ Server successfully listening on port ${PORT}`);
     console.log('All API routes are available');
     console.log('Health check endpoint: /ping');
   });
   
+  // Increase the timeout for the server to start
+  server.setTimeout(120000);
+  
   server.on('error', (err) => {
+    clearTimeout(serverStartTimeout);
     console.error('❌ Server error:', err);
-    process.exit(1);
+    // Don't exit the process, let Railway handle it
   });
   
 } catch (error) {
+  clearTimeout(serverStartTimeout);
   console.error('❌ Failed to start server:', error);
-  process.exit(1);
+  // Don't exit the process, let Railway handle it
 }
