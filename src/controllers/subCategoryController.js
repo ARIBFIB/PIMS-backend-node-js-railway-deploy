@@ -9,7 +9,15 @@ const getAllSubCategories = async (req, res) => {
     
     let subCategories;
     if (categoryId) {
-      subCategories = await SubCategory.getByCategoryId(categoryId);
+      // Validate that categoryId is a valid number
+      const categoryIdNum = parseInt(categoryId, 10);
+      if (isNaN(categoryIdNum)) {
+        return res.status(400).json({ 
+          message: 'Invalid category ID provided', 
+          error: 'Category ID must be a number' 
+        });
+      }
+      subCategories = await SubCategory.getByCategoryId(categoryIdNum);
     } else {
       subCategories = await SubCategory.getAll();
     }

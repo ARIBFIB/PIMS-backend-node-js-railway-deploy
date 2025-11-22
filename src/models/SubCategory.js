@@ -15,7 +15,9 @@ class SubCategory {
       console.log('🔧 Executing query:', query);
       const [rows] = await pool.execute(query);
       console.log('🔧 Query result:', rows.length, 'rows');
-      return rows;
+      console.log('🔧 First few rows:', rows.slice(0, 3));
+      // Ensure we're returning an array
+      return Array.isArray(rows) ? rows : [];
     } catch (error) {
       console.error('❌ Get sub categories error:', error);
       console.error('Error code:', error.code);
@@ -29,6 +31,12 @@ class SubCategory {
   static async getByCategoryId(categoryId) {
     try {
       console.log('🔧 SubCategory.getByCategoryId() called with categoryId:', categoryId);
+      // Ensure categoryId is a number
+      const categoryIdNum = parseInt(categoryId, 10);
+      if (isNaN(categoryIdNum)) {
+        throw new Error('Invalid category ID provided');
+      }
+      
       const query = `
         SELECT sc.*, c.name as categoryName 
         FROM sub_categories sc 
@@ -36,9 +44,10 @@ class SubCategory {
         WHERE sc.categoryId = ?
         ORDER BY sc.code
       `;
-      console.log('🔧 Executing query:', query, 'with categoryId:', categoryId);
-      const [rows] = await pool.execute(query, [categoryId]);
+      console.log('🔧 Executing query:', query, 'with categoryId:', categoryIdNum);
+      const [rows] = await pool.execute(query, [categoryIdNum]);
       console.log('🔧 Query result:', rows.length, 'rows');
+      console.log('🔧 First few rows:', rows.slice(0, 3));
       return rows;
     } catch (error) {
       console.error('❌ Get sub categories by category ID error:', error);
