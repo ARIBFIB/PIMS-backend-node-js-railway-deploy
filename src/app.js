@@ -7,6 +7,9 @@ app.get('/ping', (req, res) => {
   res.send('pong');
 });
 
+// Log when the app is being initialized
+console.log('🔧 Initializing Express app...');
+
 const cors = require('cors');
 const helmet = require('helmet');
 const morgan = require('morgan');
@@ -172,12 +175,20 @@ console.log('🔧 Setting up error handling...');
 
 // Handle 404
 app.use((req, res, next) => {
+  console.log('404 Not Found for:', req.originalUrl);
   res.status(404).json({ message: 'Route not found' });
 });
 
 // Error handling middleware (should be last)
-app.use(errorHandler);
+app.use((err, req, res, next) => {
+  console.error('❌ Global error handler:', err);
+  console.error('Error stack:', err.stack);
+  res.status(500).json({ message: 'Internal server error' });
+});
 
 console.log('✅ Error handling set up');
+
+// Log when the app is ready
+console.log('🔧 Express app initialized');
 
 module.exports = app;

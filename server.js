@@ -18,16 +18,10 @@ const PORT = process.env.PORT || 4000;
 
 console.log(`Attempting to start server on port ${PORT}`);
 
-// Add a timeout to ensure the server starts
-const serverStartTimeout = setTimeout(() => {
-  console.log('⚠️  Server start timeout reached, but continuing...');
-}, 30000);
-
 try {
   const app = require('./src/app');
   
   const server = app.listen(PORT, '0.0.0.0', () => {
-    clearTimeout(serverStartTimeout);
     console.log(`✅ Server successfully listening on port ${PORT}`);
     console.log('All API routes are available');
     console.log('Health check endpoint: /ping');
@@ -36,14 +30,32 @@ try {
   // Increase the timeout for the server to start
   server.setTimeout(120000);
   
+  // Handle server errors
   server.on('error', (err) => {
-    clearTimeout(serverStartTimeout);
     console.error('❌ Server error:', err);
-    // Don't exit the process, let Railway handle it
+    console.error('Error code:', err.code);
+    console.error('Error message:', err.message);
+  });
+  
+  // Handle process termination signals
+  process.on('SIGTERM', () => {
+    console.log('🛑 SIGTERM received, shutting down gracefully');
+    server.close(() => {
+      console.log('✅ Server closed');
+      process.exit(0);
+    });
+  });
+  
+  process.on('SIGINT', () => {
+    console.log('🛑 SIGINT received, shutting down gracefully');
+    server.close(() => {
+      console.log('✅ Server closed');
+      process.exit(0);
+    });
   });
   
 } catch (error) {
-  clearTimeout(serverStartTimeout);
   console.error('❌ Failed to start server:', error);
+  console.error('Error stack:', error.stack);
   // Don't exit the process, let Railway handle it
 }

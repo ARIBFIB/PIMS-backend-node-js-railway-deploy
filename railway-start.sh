@@ -2,18 +2,7 @@
 
 # Railway start script with enhanced error handling and debugging
 
-set -e  # Exit on any error
-
 echo "🚀 Starting Railway deployment process..."
-
-# Function to handle errors
-handle_error() {
-    echo "❌ Error occurred in Railway start script at line $1"
-    exit 0  # Don't fail the deployment
-}
-
-# Set up error handling
-trap 'handle_error $LINENO' ERR
 
 # Check if we're in the correct directory
 if [ ! -f "package.json" ]; then
@@ -72,6 +61,19 @@ fi
 
 echo "✅ All database setup scripts completed successfully"
 
-# Start the application
+# Start the application with proper error handling
 echo "🚀 Starting the application..."
-exec node server.js
+node server.js &
+
+# Give the server a moment to start
+sleep 5
+
+# Check if the server is running
+if pgrep -f "node server.js" > /dev/null; then
+    echo "✅ Application started successfully"
+else
+    echo "⚠️  Application may not have started correctly"
+fi
+
+# Keep the script running
+wait
