@@ -1,5 +1,4 @@
 const SubCategory = require('../models/SubCategory');
-const Category = require('../models/Category');
 
 const getAllSubCategories = async (req, res) => {
   try {
@@ -29,22 +28,15 @@ const getSubCategoryById = async (req, res) => {
 
 const createSubCategory = async (req, res) => {
   try {
-    const { name, categoryId } = req.body;
+    const { name } = req.body;
     
     // Validate input
-    if (!name || !categoryId) {
-      return res.status(400).json({ message: 'Sub-category name and category ID are required' });
-    }
-    
-    // Check if category exists
-    const category = await Category.findById(categoryId);
-    if (!category) {
-      return res.status(400).json({ message: 'Invalid category ID' });
+    if (!name) {
+      return res.status(400).json({ message: 'Sub-category name is required' });
     }
     
     const subCategory = await SubCategory.create({
-      name,
-      categoryId
+      name
     });
     
     res.status(201).json({ message: 'Sub-category created successfully', subCategory });
@@ -57,22 +49,15 @@ const createSubCategory = async (req, res) => {
 const updateSubCategory = async (req, res) => {
   try {
     const { id } = req.params;
-    const { name, categoryId } = req.body;
+    const { name } = req.body;
     
     // Validate input
-    if (!name || !categoryId) {
-      return res.status(400).json({ message: 'Sub-category name and category ID are required' });
-    }
-    
-    // Check if category exists
-    const category = await Category.findById(categoryId);
-    if (!category) {
-      return res.status(400).json({ message: 'Invalid category ID' });
+    if (!name) {
+      return res.status(400).json({ message: 'Sub-category name is required' });
     }
     
     const subCategory = await SubCategory.update(id, {
-      name,
-      categoryId
+      name
     });
     
     res.json({ message: 'Sub-category updated successfully', subCategory });

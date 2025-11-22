@@ -6,7 +6,7 @@ class SubCategory {
       const [rows] = await pool.execute(`
         SELECT sc.*, c.name as categoryName 
         FROM sub_categories sc 
-        JOIN categories c ON sc.categoryId = c.id 
+        LEFT JOIN categories c ON sc.categoryId = c.id 
         ORDER BY sc.code
       `);
       return rows;
@@ -20,7 +20,7 @@ class SubCategory {
       const [rows] = await pool.execute(`
         SELECT sc.*, c.name as categoryName 
         FROM sub_categories sc 
-        JOIN categories c ON sc.categoryId = c.id 
+        LEFT JOIN categories c ON sc.categoryId = c.id 
         WHERE sc.id = ?
       `, [id]);
       return rows[0] || null;
@@ -30,7 +30,7 @@ class SubCategory {
   }
 
   static async create(subCategoryData) {
-    const { name, categoryId } = subCategoryData;
+    const { name, categoryId = null } = subCategoryData;
     
     try {
       // Get the next sequential code
@@ -49,7 +49,7 @@ class SubCategory {
   }
 
   static async update(id, subCategoryData) {
-    const { name, categoryId } = subCategoryData;
+    const { name, categoryId = null } = subCategoryData;
     
     try {
       await pool.execute(

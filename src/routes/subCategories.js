@@ -8,12 +8,10 @@ const router = express.Router();
 router.get('/', authenticate, subCategoryController.getAllSubCategories);
 router.get('/:id', authenticate, subCategoryController.getSubCategoryById);
 router.post('/', authenticate, [
-  body('name').notEmpty().withMessage('Sub-category name is required'),
-  body('categoryId').notEmpty().withMessage('Category ID is required')
+  body('name').notEmpty().withMessage('Sub-category name is required')
 ], subCategoryController.createSubCategory);
 router.put('/:id', authenticate, [
-  body('name').notEmpty().withMessage('Sub-category name is required'),
-  body('categoryId').notEmpty().withMessage('Category ID is required')
+  body('name').notEmpty().withMessage('Sub-category name is required')
 ], subCategoryController.updateSubCategory);
 router.delete('/:id', authenticate, subCategoryController.deleteSubCategory);
 
