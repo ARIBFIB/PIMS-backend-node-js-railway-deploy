@@ -12,6 +12,7 @@ const pool = require('./config/dbPool');
 
 const uomRoutes = require('./routes/uom');
 const categoryRoutes = require('./routes/categories');
+const subCategoryRoutes = require('./routes/subCategories');
 const supplierRoutes = require('./routes/suppliers');
 const customerRoutes = require('./routes/customers');
 const purchaseOrderRoutes = require('./routes/purchaseOrders');
@@ -100,6 +101,7 @@ app.use('/api/reports', reportRoutes);
 
 app.use('/api/uom', uomRoutes);
 app.use('/api/categories', categoryRoutes);
+app.use('/api/sub-categories', subCategoryRoutes);
 app.use('/api/suppliers', supplierRoutes);
 app.use('/api/customers', customerRoutes);
 app.use('/api/purchase-orders', purchaseOrderRoutes);
