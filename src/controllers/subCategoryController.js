@@ -23,7 +23,10 @@ const getAllSubCategories = async (req, res) => {
     }
     
     console.log('🔧 getAllSubCategories result:', subCategories.length, 'items');
-    res.json(subCategories);
+    console.log('🔧 First few items:', subCategories.slice(0, 3));
+    // Ensure we're returning an array
+    const result = Array.isArray(subCategories) ? subCategories : [];
+    res.json(result);
   } catch (error) {
     console.error('Get sub categories error:', error);
     res.status(500).json({ 

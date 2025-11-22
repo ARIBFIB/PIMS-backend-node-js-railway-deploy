@@ -48,7 +48,8 @@ class SubCategory {
       const [rows] = await pool.execute(query, [categoryIdNum]);
       console.log('🔧 Query result:', rows.length, 'rows');
       console.log('🔧 First few rows:', rows.slice(0, 3));
-      return rows;
+      // Ensure we're returning an array
+      return Array.isArray(rows) ? rows : [];
     } catch (error) {
       console.error('❌ Get sub categories by category ID error:', error);
       console.error('Error code:', error.code);
