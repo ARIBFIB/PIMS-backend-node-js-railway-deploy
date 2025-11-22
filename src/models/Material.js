@@ -14,7 +14,20 @@ class Material {
       console.log('Executing Material.getAll query:', query);
       const [rows] = await pool.execute(query);
       console.log('Material.getAll query returned', rows.length, 'rows');
-      return rows;
+      
+      // Add support for multiple sub-categories in the response
+      const materialsWithSubCategories = rows.map(material => {
+        // For now, we're just returning the existing data
+        // In the future, we could enhance this to include multiple sub-category information
+        return {
+          ...material,
+          // Add comma-separated sub-category IDs and names for future use
+          subCategoryIds: material.subCategoryId ? material.subCategoryId.toString() : null,
+          subCategoryNames: material.subCategoryName ? material.subCategoryName : null
+        };
+      });
+      
+      return materialsWithSubCategories;
     } catch (error) {
       console.error('Error in Material.getAll:', error);
       console.error('Error code:', error.code);
@@ -33,7 +46,19 @@ class Material {
         [id]
       );
       console.log('Material.findById query returned', rows.length, 'rows');
-      return rows.length > 0 ? rows[0] : null;
+      
+      if (rows.length > 0) {
+        const material = rows[0];
+        // Add support for multiple sub-categories in the response
+        return {
+          ...material,
+          // Add comma-separated sub-category IDs and names for future use
+          subCategoryIds: material.subCategoryId ? material.subCategoryId.toString() : null,
+          subCategoryNames: material.subCategoryName ? material.subCategoryName : null
+        };
+      }
+      
+      return null;
     } catch (error) {
       console.error('Error in Material.findById:', error);
       console.error('Error code:', error.code);
@@ -163,7 +188,21 @@ class Material {
       console.log('Query:', query);
       const [rows] = await pool.execute(query);
       console.log('Material.getLowStockItems query returned', rows.length, 'rows');
-      return rows;
+      
+      // Add support for multiple sub-categories in the response
+      const materialsWithSubCategories = rows.map(material => {
+        return {
+          ...material,
+          categoryName: material.categoryName || null,
+          uomName: material.uomName || null,
+          uomSymbol: material.uomSymbol || null,
+          // Add comma-separated sub-category IDs and names for future use
+          subCategoryIds: material.subCategoryId ? material.subCategoryId.toString() : null,
+          subCategoryNames: null // We don't have sub-category name in this query
+        };
+      });
+      
+      return materialsWithSubCategories;
     } catch (error) {
       console.error('Error in Material.getLowStockItems:', error);
       console.error('Error code:', error.code);
@@ -180,7 +219,10 @@ class Material {
           ...row,
           categoryName: null,
           uomName: null,
-          uomSymbol: null
+          uomSymbol: null,
+          // Add comma-separated sub-category IDs and names for future use
+          subCategoryIds: row.subCategoryId ? row.subCategoryId.toString() : null,
+          subCategoryNames: null
         }));
       } catch (fallbackError) {
         console.error('Fallback query also failed:', fallbackError);
