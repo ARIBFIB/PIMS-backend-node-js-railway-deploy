@@ -26,6 +26,30 @@ class SubCategory {
     }
   }
 
+  static async getByCategoryId(categoryId) {
+    try {
+      console.log('🔧 SubCategory.getByCategoryId() called with categoryId:', categoryId);
+      const query = `
+        SELECT sc.*, c.name as categoryName 
+        FROM sub_categories sc 
+        LEFT JOIN categories c ON sc.categoryId = c.id 
+        WHERE sc.categoryId = ?
+        ORDER BY sc.code
+      `;
+      console.log('🔧 Executing query:', query, 'with categoryId:', categoryId);
+      const [rows] = await pool.execute(query, [categoryId]);
+      console.log('🔧 Query result:', rows.length, 'rows');
+      return rows;
+    } catch (error) {
+      console.error('❌ Get sub categories by category ID error:', error);
+      console.error('Error code:', error.code);
+      console.error('Error errno:', error.errno);
+      console.error('Error sqlState:', error.sqlState);
+      console.error('Error sql:', error.sql);
+      throw error;
+    }
+  }
+
   static async findById(id) {
     try {
       console.log('🔧 SubCategory.findById() called with id:', id);

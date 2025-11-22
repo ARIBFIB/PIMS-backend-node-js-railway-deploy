@@ -3,9 +3,17 @@ const SubCategory = require('../models/SubCategory');
 console.log('🔧 SubCategory controller loaded');
 
 const getAllSubCategories = async (req, res) => {
-  console.log('🔧 getAllSubCategories called');
+  console.log('🔧 getAllSubCategories called with query:', req.query);
   try {
-    const subCategories = await SubCategory.getAll();
+    const { categoryId } = req.query;
+    
+    let subCategories;
+    if (categoryId) {
+      subCategories = await SubCategory.getByCategoryId(categoryId);
+    } else {
+      subCategories = await SubCategory.getAll();
+    }
+    
     console.log('🔧 getAllSubCategories result:', subCategories.length, 'items');
     res.json(subCategories);
   } catch (error) {
