@@ -1,7 +1,17 @@
 // Server for Railway deployment - using the full application with error handling
-require('dotenv').config();
+// Don't require dotenv in Railway environment as env vars are already set
+if (!process.env.MYSQLDATABASE) {
+  require('dotenv').config();
+}
 
 console.log('Starting server...');
+console.log('🔧 Environment info:', {
+  PORT: process.env.PORT,
+  MYSQLHOST: process.env.MYSQLHOST,
+  MYSQLPORT: process.env.MYSQLPORT,
+  MYSQLUSER: process.env.MYSQLUSER,
+  MYSQLDATABASE: process.env.MYSQLDATABASE,
+});
 
 // Use Railway's PORT or default to 4000
 const PORT = process.env.PORT || 4000;

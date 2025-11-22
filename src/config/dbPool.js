@@ -1,5 +1,10 @@
 const mysql = require('mysql2/promise');
 
+// Don't require dotenv in Railway environment as env vars are already set
+if (!process.env.MYSQLDATABASE) {
+  require('dotenv').config();
+}
+
 // Database configuration (supports Railway & local)
 const dbConfig = {
   host: process.env.MYSQLHOST || process.env.DB_HOST || "localhost",
@@ -14,11 +19,15 @@ const dbConfig = {
   connectTimeout: 20000
 };
 
-console.log('Database configuration:', {
+console.log('🔧 Database pool configuration:', {
   host: dbConfig.host,
   port: dbConfig.port,
   user: dbConfig.user,
-  database: dbConfig.database
+  database: dbConfig.database,
+  MYSQLHOST: process.env.MYSQLHOST,
+  MYSQLPORT: process.env.MYSQLPORT,
+  MYSQLUSER: process.env.MYSQLUSER,
+  MYSQLDATABASE: process.env.MYSQLDATABASE,
 });
 
 // Create connection pool
@@ -31,6 +40,9 @@ pool.on('connection', (connection) => {
 
 pool.on('error', (error) => {
   console.error('❌ Database pool error:', error.message);
+  console.error('Error code:', error.code);
+  console.error('Error errno:', error.errno);
+  console.error('Error sqlState:', error.sqlState);
 });
 
 // Add acquire and release events for debugging

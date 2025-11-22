@@ -1,30 +1,50 @@
 const pool = require('../config/dbPool');
 
+console.log('🔧 SubCategory model loaded');
+
 class SubCategory {
   static async getAll() {
     try {
-      const [rows] = await pool.execute(`
+      console.log('🔧 SubCategory.getAll() called');
+      const query = `
         SELECT sc.*, c.name as categoryName 
         FROM sub_categories sc 
         LEFT JOIN categories c ON sc.categoryId = c.id 
         ORDER BY sc.code
-      `);
+      `;
+      console.log('🔧 Executing query:', query);
+      const [rows] = await pool.execute(query);
+      console.log('🔧 Query result:', rows.length, 'rows');
       return rows;
     } catch (error) {
+      console.error('❌ Get sub categories error:', error);
+      console.error('Error code:', error.code);
+      console.error('Error errno:', error.errno);
+      console.error('Error sqlState:', error.sqlState);
+      console.error('Error sql:', error.sql);
       throw error;
     }
   }
 
   static async findById(id) {
     try {
-      const [rows] = await pool.execute(`
+      console.log('🔧 SubCategory.findById() called with id:', id);
+      const query = `
         SELECT sc.*, c.name as categoryName 
         FROM sub_categories sc 
         LEFT JOIN categories c ON sc.categoryId = c.id 
         WHERE sc.id = ?
-      `, [id]);
+      `;
+      console.log('🔧 Executing query:', query, 'with id:', id);
+      const [rows] = await pool.execute(query, [id]);
+      console.log('🔧 Query result:', rows.length, 'rows');
       return rows[0] || null;
     } catch (error) {
+      console.error('❌ Get sub-category error:', error);
+      console.error('Error code:', error.code);
+      console.error('Error errno:', error.errno);
+      console.error('Error sqlState:', error.sqlState);
+      console.error('Error sql:', error.sql);
       throw error;
     }
   }

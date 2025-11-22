@@ -1,5 +1,10 @@
+#!/usr/bin/env node
+
 const mysql = require('mysql2/promise');
-require('dotenv').config();
+// Don't require dotenv in Railway environment as env vars are already set
+if (!process.env.MYSQLDATABASE) {
+  require('dotenv').config();
+}
 
 async function runRailwayPostDeploy() {
   console.log('🚀 Running Railway post-deploy setup...');
@@ -17,6 +22,12 @@ async function runRailwayPostDeploy() {
     });
     
     console.log('✅ Connected to Railway database successfully');
+    console.log('🔧 Database info:', {
+      host: process.env.MYSQLHOST || process.env.DB_HOST,
+      port: process.env.MYSQLPORT || process.env.DB_PORT,
+      user: process.env.MYSQLUSER || process.env.DB_USER,
+      database: process.env.MYSQLDATABASE || process.env.DB_NAME,
+    });
     
     // Check if recipeUnit column exists
     console.log('🔍 Checking if recipeUnit column exists...');
@@ -40,6 +51,8 @@ async function runRailwayPostDeploy() {
       "SHOW TABLES LIKE 'sub_categories'"
     );
     
+    console.log('📊 SHOW TABLES result:', tables);
+    
     if (tables.length === 0) {
       console.log('➕ Creating sub_categories table...');
       await connection.execute(`
@@ -59,6 +72,7 @@ async function runRailwayPostDeploy() {
       
       // Check if categoryId column allows NULL values
       const [columns] = await connection.execute("DESCRIBE sub_categories categoryId");
+      console.log('📊 DESCRIBE sub_categories categoryId result:', columns);
       if (columns[0] && columns[0].Null === 'NO') {
         console.log('➕ Updating sub_categories table structure...');
         await connection.execute(`
@@ -79,6 +93,7 @@ async function runRailwayPostDeploy() {
     
   } catch (error) {
     console.error('❌ Railway post-deploy setup failed:', error.message);
+    console.error('Error stack:', error.stack);
     if (connection) {
       await connection.end();
     }

@@ -1,16 +1,28 @@
 const SubCategory = require('../models/SubCategory');
 
+console.log('🔧 SubCategory controller loaded');
+
 const getAllSubCategories = async (req, res) => {
+  console.log('🔧 getAllSubCategories called');
   try {
     const subCategories = await SubCategory.getAll();
+    console.log('🔧 getAllSubCategories result:', subCategories.length, 'items');
     res.json(subCategories);
   } catch (error) {
     console.error('Get sub categories error:', error);
-    res.status(500).json({ message: 'Internal server error', error: error.message });
+    res.status(500).json({ 
+      message: 'Internal server error', 
+      error: error.message,
+      code: error.code,
+      errno: error.errno,
+      sqlState: error.sqlState,
+      sql: error.sql
+    });
   }
 };
 
 const getSubCategoryById = async (req, res) => {
+  console.log('🔧 getSubCategoryById called with params:', req.params);
   try {
     const { id } = req.params;
     const subCategory = await SubCategory.findById(id);
@@ -22,7 +34,14 @@ const getSubCategoryById = async (req, res) => {
     res.json(subCategory);
   } catch (error) {
     console.error('Get sub-category error:', error);
-    res.status(500).json({ message: 'Internal server error', error: error.message });
+    res.status(500).json({ 
+      message: 'Internal server error', 
+      error: error.message,
+      code: error.code,
+      errno: error.errno,
+      sqlState: error.sqlState,
+      sql: error.sql
+    });
   }
 };
 

@@ -1,11 +1,17 @@
 const jwt = require('../utils/jwt');
 const User = require('../models/User');
 
+console.log('🔧 Auth middleware loaded');
+
 const authenticate = (req, res, next) => {
+  console.log('🔧 authenticate middleware called');
+  console.log('🔧 Request headers:', req.headers);
   try {
     const token = req.header('Authorization')?.replace('Bearer ', '');
+    console.log('🔧 Token:', token ? '****' : '(none)');
     
     if (!token) {
+      console.log('❌ No token provided');
       // Set CORS headers for error responses
       res.header('Access-Control-Allow-Origin', req.headers.origin || '*');
       res.header('Access-Control-Allow-Credentials', 'true');
@@ -15,9 +21,11 @@ const authenticate = (req, res, next) => {
     }
     
     const decoded = jwt.verify(token);
+    console.log('🔧 Decoded token:', decoded);
     req.user = decoded;
     next();
   } catch (error) {
+    console.log('❌ Invalid token:', error.message);
     // Set CORS headers for error responses
     res.header('Access-Control-Allow-Origin', req.headers.origin || '*');
     res.header('Access-Control-Allow-Credentials', 'true');

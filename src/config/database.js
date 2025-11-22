@@ -1,22 +1,35 @@
 // Script to initialize the admin_pims database and tables
 const mysql = require("mysql2/promise");
 
+// Don't require dotenv in Railway environment as env vars are already set
+if (!process.env.MYSQLDATABASE) {
+  require('dotenv').config();
+}
+
 // Database configuration (supports Railway & local)
 const dbConfig = {
-  host: process.env.DB_HOST || process.env.MYSQLHOST || "localhost",
-  port: process.env.DB_PORT || process.env.MYSQLPORT || 3306,
-  user: process.env.DB_USER || process.env.MYSQLUSER || "root",
-  password: process.env.DB_PASSWORD || process.env.MYSQLPASSWORD || "",
-  database: process.env.DB_NAME || process.env.MYSQLDATABASE || "admin_pims",
+  host: process.env.MYSQLHOST || process.env.DB_HOST || "localhost",
+  port: process.env.MYSQLPORT || process.env.DB_PORT || 3306,
+  user: process.env.MYSQLUSER || process.env.DB_USER || "root",
+  password: process.env.MYSQLPASSWORD || process.env.DB_PASSWORD || "",
+  database: process.env.MYSQLDATABASE || process.env.DB_NAME || "admin_pims",
   multipleStatements: true,
   connectTimeout: 20000,
 };
+
+console.log('🔧 Database configuration:', dbConfig);
 
 // Create connection pool
 const pool = mysql.createPool(dbConfig);
 
 async function initDatabase() {
   console.log('🚀 Starting database initialization...');
+  console.log('🔧 Init database config:', {
+    host: dbConfig.host,
+    port: dbConfig.port,
+    user: dbConfig.user,
+    database: dbConfig.database,
+  });
   let connection;
 
   try {
@@ -37,7 +50,7 @@ async function initDatabase() {
     } else {
       // For Railway, we need to select the database explicitly
       await connection.query(`USE ${process.env.MYSQLDATABASE};`);
-      console.log("✅ Using Railway provided database");
+      console.log(`✅ Using Railway provided database: ${process.env.MYSQLDATABASE}`);
     }
 
     console.log("🧱 Creating tables...");
@@ -130,6 +143,7 @@ async function initDatabase() {
     console.log("✅ Categories table created");
     
     // SUB-CATEGORIES (Create after categories)
+    console.log("🔧 Creating sub_categories table...");
     await connection.query(`
       CREATE TABLE IF NOT EXISTS sub_categories (
         id INT AUTO_INCREMENT PRIMARY KEY,
@@ -141,7 +155,6 @@ async function initDatabase() {
         FOREIGN KEY (categoryId) REFERENCES categories(id) ON DELETE SET NULL
       );
     `);
-
     console.log("✅ Sub-categories table created");
 
     // UNIT OF MEASURES (Create before materials that reference it)
@@ -487,6 +500,12 @@ async function testConnection() {
   while (retries > 0) {
     try {
       console.log("🚀 Testing database connection...");
+      console.log("🔧 Test connection config:", {
+        host: dbConfig.host,
+        port: dbConfig.port,
+        user: dbConfig.user,
+        password: dbConfig.password ? '****' : '(empty)',
+      });
       connection = await mysql.createConnection(dbConfig);
       console.log("✅ Database connection successful");
       await connection.end();

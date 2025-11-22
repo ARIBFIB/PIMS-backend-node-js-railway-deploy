@@ -1,8 +1,21 @@
+#!/usr/bin/env node
+
 const { initDatabase, testConnection } = require('../src/config/database');
 const { addSubCategoryTable } = require('./add-subcategory-table');
 
+// Don't require dotenv in Railway environment as env vars are already set
+if (!process.env.MYSQLDATABASE) {
+  require('dotenv').config();
+}
+
 async function setupRailwayDatabase() {
   console.log('Setting up Railway database...');
+  console.log('🔧 Environment info:', {
+    MYSQLHOST: process.env.MYSQLHOST,
+    MYSQLPORT: process.env.MYSQLPORT,
+    MYSQLUSER: process.env.MYSQLUSER,
+    MYSQLDATABASE: process.env.MYSQLDATABASE,
+  });
   
   // Test connection with multiple retries
   let retries = 5;
@@ -31,6 +44,7 @@ async function setupRailwayDatabase() {
       process.exit(0);
     } catch (error) {
       console.error('❌ Failed to initialize Railway database:', error.message);
+      console.error('Error stack:', error.stack);
       process.exit(1);
     }
   } else {

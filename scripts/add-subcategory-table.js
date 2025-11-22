@@ -5,6 +5,11 @@
 
 const mysql = require('mysql2/promise');
 
+// Don't require dotenv in Railway environment as env vars are already set
+if (!process.env.MYSQLDATABASE) {
+  require('dotenv').config();
+}
+
 // Database configuration (supports Railway & local)
 const dbConfig = {
   host: process.env.MYSQLHOST || process.env.DB_HOST || "localhost",
@@ -79,6 +84,7 @@ async function addSubCategoryTable() {
     
   } catch (err) {
     console.error("❌ Failed to add sub_categories table:", err.message);
+    console.error("Error stack:", err.stack);
     if (connection) await connection.end();
     process.exit(1);
   }
@@ -91,6 +97,7 @@ if (require.main === module) {
     process.exit(0);
   }).catch((error) => {
     console.error("❌ Sub-categories table setup failed:", error.message);
+    console.error("Error stack:", error.stack);
     process.exit(1);
   });
 }
