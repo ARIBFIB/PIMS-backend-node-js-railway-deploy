@@ -46,15 +46,12 @@ const createMaterial = async (req, res) => {
       return res.status(400).json({ message: 'Name and Low Stock Threshold are required' });
     }
     
-    // For now, we'll use the first sub-category ID if multiple are provided
+    // Use all sub-category IDs as a comma-separated string
     let subCategoryId = null;
     if (subCategoryIds) {
-      // If it's a comma-separated string, take the first one
+      // If it's a comma-separated string, use it as is
       if (typeof subCategoryIds === 'string') {
-        const ids = subCategoryIds.split(',').map(id => id.trim()).filter(id => id);
-        if (ids.length > 0) {
-          subCategoryId = ids[0];
-        }
+        subCategoryId = subCategoryIds;
       } else {
         subCategoryId = subCategoryIds;
       }
@@ -94,15 +91,12 @@ const updateMaterial = async (req, res) => {
     
     // Handle sub-category IDs
     if (subCategoryIds !== undefined) {
-      // For now, we'll use the first sub-category ID if multiple are provided
+      // Use all sub-category IDs as a comma-separated string
       let subCategoryId = null;
       if (subCategoryIds) {
-        // If it's a comma-separated string, take the first one
+        // If it's a comma-separated string, use it as is
         if (typeof subCategoryIds === 'string') {
-          const ids = subCategoryIds.split(',').map(id => id.trim()).filter(id => id);
-          if (ids.length > 0) {
-            subCategoryId = ids[0];
-          }
+          subCategoryId = subCategoryIds;
         } else {
           subCategoryId = subCategoryIds;
         }

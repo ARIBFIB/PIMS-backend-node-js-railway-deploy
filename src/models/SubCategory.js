@@ -127,6 +127,37 @@ class SubCategory {
       throw error;
     }
   }
+
+  // New method to fetch multiple sub-categories by IDs
+  static async getByIds(ids) {
+    try {
+      console.log('🔧 SubCategory.getByIds() called with ids:', ids);
+      if (!ids || ids.length === 0) {
+        return [];
+      }
+      
+      // Create placeholders for the query
+      const placeholders = ids.map(() => '?').join(',');
+      const query = `
+        SELECT sc.*, c.name as categoryName 
+        FROM sub_categories sc 
+        LEFT JOIN categories c ON sc.categoryId = c.id 
+        WHERE sc.id IN (${placeholders})
+        ORDER BY sc.code
+      `;
+      console.log('🔧 Executing query:', query, 'with ids:', ids);
+      const [rows] = await pool.execute(query, ids);
+      console.log('🔧 Query result:', rows.length, 'rows');
+      return Array.isArray(rows) ? rows : [];
+    } catch (error) {
+      console.error('❌ Get sub categories by IDs error:', error);
+      console.error('Error code:', error.code);
+      console.error('Error errno:', error.errno);
+      console.error('Error sqlState:', error.sqlState);
+      console.error('Error sql:', error.sql);
+      throw error;
+    }
+  }
 }
 
 module.exports = SubCategory;

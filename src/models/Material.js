@@ -1,4 +1,5 @@
 const pool = require('../config/dbPool');
+const SubCategory = require('./SubCategory');
 
 class Material {
   static async getAll() {
@@ -16,16 +17,27 @@ class Material {
       console.log('Material.getAll query returned', rows.length, 'rows');
       
       // Add support for multiple sub-categories in the response
-      const materialsWithSubCategories = rows.map(material => {
-        // For now, we're just returning the existing data
-        // In the future, we could enhance this to include multiple sub-category information
+      const materialsWithSubCategories = await Promise.all(rows.map(async (material) => {
+        // Handle comma-separated sub-category IDs
+        let subCategoryNames = null;
+        if (material.subCategoryId) {
+          // Check if subCategoryId contains comma-separated values
+          if (material.subCategoryId.includes(',')) {
+            // Multiple sub-category IDs
+            const subCategoryIds = material.subCategoryId.split(',').map(id => id.trim()).filter(id => id);
+            const subCategories = await SubCategory.getByIds(subCategoryIds);
+            subCategoryNames = subCategories.map(sc => sc.name).join(',');
+          } else {
+            // Single sub-category ID
+            subCategoryNames = material.subCategoryName;
+          }
+        }
+        
         return {
           ...material,
-          // Add comma-separated sub-category IDs and names for future use
-          subCategoryIds: material.subCategoryId ? material.subCategoryId.toString() : null,
-          subCategoryNames: material.subCategoryName ? material.subCategoryName : null
+          subCategoryNames: subCategoryNames
         };
-      });
+      }));
       
       return materialsWithSubCategories;
     } catch (error) {
@@ -49,12 +61,24 @@ class Material {
       
       if (rows.length > 0) {
         const material = rows[0];
-        // Add support for multiple sub-categories in the response
+        // Handle comma-separated sub-category IDs
+        let subCategoryNames = null;
+        if (material.subCategoryId) {
+          // Check if subCategoryId contains comma-separated values
+          if (material.subCategoryId.includes(',')) {
+            // Multiple sub-category IDs
+            const subCategoryIds = material.subCategoryId.split(',').map(id => id.trim()).filter(id => id);
+            const subCategories = await SubCategory.getByIds(subCategoryIds);
+            subCategoryNames = subCategories.map(sc => sc.name).join(',');
+          } else {
+            // Single sub-category ID
+            subCategoryNames = material.subCategoryName;
+          }
+        }
+        
         return {
           ...material,
-          // Add comma-separated sub-category IDs and names for future use
-          subCategoryIds: material.subCategoryId ? material.subCategoryId.toString() : null,
-          subCategoryNames: material.subCategoryName ? material.subCategoryName : null
+          subCategoryNames: subCategoryNames
         };
       }
       
@@ -73,6 +97,8 @@ class Material {
     const { name, unit, categoryId, subCategoryId, uomId, quantity, lowStockThreshold } = materialData;
     try {
       console.log('Executing Material.create with data:', materialData);
+      console.log('Sub-category ID being stored:', subCategoryId);
+      
       const [result] = await pool.execute(
         'INSERT INTO materials (name, unit, categoryId, subCategoryId, uomId, quantity, lowStockThreshold) VALUES (?, ?, ?, ?, ?, ?, ?)',
         [name, unit || 'N/A', categoryId || null, subCategoryId || null, uomId || null, quantity || 0, lowStockThreshold]
@@ -107,6 +133,7 @@ class Material {
     if (subCategoryId !== undefined) {
       fields.push('subCategoryId = ?');
       values.push(subCategoryId || null);
+      console.log('Sub-category ID being updated:', subCategoryId);
     }
     if (uomId !== undefined) {
       fields.push('uomId = ?');
@@ -190,17 +217,31 @@ class Material {
       console.log('Material.getLowStockItems query returned', rows.length, 'rows');
       
       // Add support for multiple sub-categories in the response
-      const materialsWithSubCategories = rows.map(material => {
+      const materialsWithSubCategories = await Promise.all(rows.map(async (material) => {
+        // Handle comma-separated sub-category IDs
+        let subCategoryNames = null;
+        if (material.subCategoryId) {
+          // Check if subCategoryId contains comma-separated values
+          if (material.subCategoryId.includes(',')) {
+            // Multiple sub-category IDs
+            const subCategoryIds = material.subCategoryId.split(',').map(id => id.trim()).filter(id => id);
+            const subCategories = await SubCategory.getByIds(subCategoryIds);
+            subCategoryNames = subCategories.map(sc => sc.name).join(',');
+          } else {
+            // For low stock items, we don't have sub-category name in this query
+            // We would need to fetch it separately, but for now we'll leave it as null
+            subCategoryNames = null;
+          }
+        }
+        
         return {
           ...material,
           categoryName: material.categoryName || null,
           uomName: material.uomName || null,
           uomSymbol: material.uomSymbol || null,
-          // Add comma-separated sub-category IDs and names for future use
-          subCategoryIds: material.subCategoryId ? material.subCategoryId.toString() : null,
-          subCategoryNames: null // We don't have sub-category name in this query
+          subCategoryNames: subCategoryNames
         };
-      });
+      }));
       
       return materialsWithSubCategories;
     } catch (error) {
@@ -215,15 +256,33 @@ class Material {
         console.log('Trying fallback query without joins...');
         const [rows] = await pool.execute('SELECT * FROM materials WHERE CAST(quantity AS DECIMAL(10,2)) <= CAST(lowStockThreshold AS DECIMAL(10,2))');
         console.log('Fallback query returned', rows.length, 'rows');
-        return rows.map(row => ({
-          ...row,
-          categoryName: null,
-          uomName: null,
-          uomSymbol: null,
-          // Add comma-separated sub-category IDs and names for future use
-          subCategoryIds: row.subCategoryId ? row.subCategoryId.toString() : null,
-          subCategoryNames: null
+        
+        const materialsWithSubCategories = await Promise.all(rows.map(async (row) => {
+          // Handle comma-separated sub-category IDs
+          let subCategoryNames = null;
+          if (row.subCategoryId) {
+            // Check if subCategoryId contains comma-separated values
+            if (row.subCategoryId.includes(',')) {
+              // Multiple sub-category IDs
+              const subCategoryIds = row.subCategoryId.split(',').map(id => id.trim()).filter(id => id);
+              const subCategories = await SubCategory.getByIds(subCategoryIds);
+              subCategoryNames = subCategories.map(sc => sc.name).join(',');
+            } else {
+              // For low stock items, we don't have sub-category name in this query
+              subCategoryNames = null;
+            }
+          }
+          
+          return {
+            ...row,
+            categoryName: null,
+            uomName: null,
+            uomSymbol: null,
+            subCategoryNames: subCategoryNames
+          };
         }));
+        
+        return materialsWithSubCategories;
       } catch (fallbackError) {
         console.error('Fallback query also failed:', fallbackError);
         throw fallbackError;
