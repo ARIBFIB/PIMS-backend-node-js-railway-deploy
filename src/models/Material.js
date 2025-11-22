@@ -16,30 +16,12 @@ class Material {
       const [rows] = await pool.execute(query);
       console.log('Material.getAll query returned', rows.length, 'rows');
       
-      // Add support for multiple sub-categories in the response
-      const materialsWithSubCategories = await Promise.all(rows.map(async (material) => {
-        // Handle comma-separated sub-category IDs
-        let subCategoryNames = null;
-        if (material.subCategoryId) {
-          // Check if subCategoryId contains comma-separated values
-          if (material.subCategoryId.includes(',')) {
-            // Multiple sub-category IDs
-            const subCategoryIds = material.subCategoryId.split(',').map(id => id.trim()).filter(id => id);
-            const subCategories = await SubCategory.getByIds(subCategoryIds);
-            subCategoryNames = subCategories.map(sc => sc.name).join(',');
-          } else {
-            // Single sub-category ID
-            subCategoryNames = material.subCategoryName;
-          }
-        }
-        
-        return {
-          ...material,
-          subCategoryNames: subCategoryNames
-        };
+      // For now, return the data as is since we're not actually storing multiple sub-categories
+      // The frontend will handle the UI for multiple selection but we'll only store one in the DB
+      return rows.map(material => ({
+        ...material,
+        subCategoryNames: material.subCategoryName ? material.subCategoryName : null
       }));
-      
-      return materialsWithSubCategories;
     } catch (error) {
       console.error('Error in Material.getAll:', error);
       console.error('Error code:', error.code);
@@ -61,24 +43,11 @@ class Material {
       
       if (rows.length > 0) {
         const material = rows[0];
-        // Handle comma-separated sub-category IDs
-        let subCategoryNames = null;
-        if (material.subCategoryId) {
-          // Check if subCategoryId contains comma-separated values
-          if (material.subCategoryId.includes(',')) {
-            // Multiple sub-category IDs
-            const subCategoryIds = material.subCategoryId.split(',').map(id => id.trim()).filter(id => id);
-            const subCategories = await SubCategory.getByIds(subCategoryIds);
-            subCategoryNames = subCategories.map(sc => sc.name).join(',');
-          } else {
-            // Single sub-category ID
-            subCategoryNames = material.subCategoryName;
-          }
-        }
-        
+        // For now, return the data as is since we're not actually storing multiple sub-categories
+        // The frontend will handle the UI for multiple selection but we'll only store one in the DB
         return {
           ...material,
-          subCategoryNames: subCategoryNames
+          subCategoryNames: material.subCategoryName ? material.subCategoryName : null
         };
       }
       
@@ -216,34 +185,15 @@ class Material {
       const [rows] = await pool.execute(query);
       console.log('Material.getLowStockItems query returned', rows.length, 'rows');
       
-      // Add support for multiple sub-categories in the response
-      const materialsWithSubCategories = await Promise.all(rows.map(async (material) => {
-        // Handle comma-separated sub-category IDs
-        let subCategoryNames = null;
-        if (material.subCategoryId) {
-          // Check if subCategoryId contains comma-separated values
-          if (material.subCategoryId.includes(',')) {
-            // Multiple sub-category IDs
-            const subCategoryIds = material.subCategoryId.split(',').map(id => id.trim()).filter(id => id);
-            const subCategories = await SubCategory.getByIds(subCategoryIds);
-            subCategoryNames = subCategories.map(sc => sc.name).join(',');
-          } else {
-            // For low stock items, we don't have sub-category name in this query
-            // We would need to fetch it separately, but for now we'll leave it as null
-            subCategoryNames = null;
-          }
-        }
-        
-        return {
-          ...material,
-          categoryName: material.categoryName || null,
-          uomName: material.uomName || null,
-          uomSymbol: material.uomSymbol || null,
-          subCategoryNames: subCategoryNames
-        };
+      // For now, return the data as is since we're not actually storing multiple sub-categories
+      // The frontend will handle the UI for multiple selection but we'll only store one in the DB
+      return rows.map(material => ({
+        ...material,
+        categoryName: material.categoryName || null,
+        uomName: material.uomName || null,
+        uomSymbol: material.uomSymbol || null,
+        subCategoryNames: null // We don't have sub-category name in this query
       }));
-      
-      return materialsWithSubCategories;
     } catch (error) {
       console.error('Error in Material.getLowStockItems:', error);
       console.error('Error code:', error.code);
@@ -257,32 +207,13 @@ class Material {
         const [rows] = await pool.execute('SELECT * FROM materials WHERE CAST(quantity AS DECIMAL(10,2)) <= CAST(lowStockThreshold AS DECIMAL(10,2))');
         console.log('Fallback query returned', rows.length, 'rows');
         
-        const materialsWithSubCategories = await Promise.all(rows.map(async (row) => {
-          // Handle comma-separated sub-category IDs
-          let subCategoryNames = null;
-          if (row.subCategoryId) {
-            // Check if subCategoryId contains comma-separated values
-            if (row.subCategoryId.includes(',')) {
-              // Multiple sub-category IDs
-              const subCategoryIds = row.subCategoryId.split(',').map(id => id.trim()).filter(id => id);
-              const subCategories = await SubCategory.getByIds(subCategoryIds);
-              subCategoryNames = subCategories.map(sc => sc.name).join(',');
-            } else {
-              // For low stock items, we don't have sub-category name in this query
-              subCategoryNames = null;
-            }
-          }
-          
-          return {
-            ...row,
-            categoryName: null,
-            uomName: null,
-            uomSymbol: null,
-            subCategoryNames: subCategoryNames
-          };
+        return rows.map(row => ({
+          ...row,
+          categoryName: null,
+          uomName: null,
+          uomSymbol: null,
+          subCategoryNames: null
         }));
-        
-        return materialsWithSubCategories;
       } catch (fallbackError) {
         console.error('Fallback query also failed:', fallbackError);
         throw fallbackError;

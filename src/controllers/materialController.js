@@ -46,12 +46,16 @@ const createMaterial = async (req, res) => {
       return res.status(400).json({ message: 'Name and Low Stock Threshold are required' });
     }
     
-    // Use all sub-category IDs as a comma-separated string
+    // For now, we'll only store the first sub-category ID since the DB column is INT
+    // In the future, we might need to create a many-to-many relationship table
     let subCategoryId = null;
     if (subCategoryIds) {
-      // If it's a comma-separated string, use it as is
+      // If it's a comma-separated string, take the first one
       if (typeof subCategoryIds === 'string') {
-        subCategoryId = subCategoryIds;
+        const ids = subCategoryIds.split(',').map(id => id.trim()).filter(id => id);
+        if (ids.length > 0) {
+          subCategoryId = ids[0]; // Only take the first one for now
+        }
       } else {
         subCategoryId = subCategoryIds;
       }
@@ -91,12 +95,16 @@ const updateMaterial = async (req, res) => {
     
     // Handle sub-category IDs
     if (subCategoryIds !== undefined) {
-      // Use all sub-category IDs as a comma-separated string
+      // For now, we'll only store the first sub-category ID since the DB column is INT
+      // In the future, we might need to create a many-to-many relationship table
       let subCategoryId = null;
       if (subCategoryIds) {
-        // If it's a comma-separated string, use it as is
+        // If it's a comma-separated string, take the first one
         if (typeof subCategoryIds === 'string') {
-          subCategoryId = subCategoryIds;
+          const ids = subCategoryIds.split(',').map(id => id.trim()).filter(id => id);
+          if (ids.length > 0) {
+            subCategoryId = ids[0]; // Only take the first one for now
+          }
         } else {
           subCategoryId = subCategoryIds;
         }
