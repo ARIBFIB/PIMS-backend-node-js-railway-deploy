@@ -85,7 +85,7 @@ const limiter = rateLimit({
 // Separate rate limiter for auth endpoints (login, register, etc.) to prevent abuse
 const authLimiter = rateLimit({
   windowMs: 15 * 60 * 1000, // 15 minutes
-  max: 100, // Increased limit to 100 requests per 15 minutes for auth endpoints
+  max: 500, // Increased limit to 500 requests per 15 minutes for auth endpoints to allow multiple users
   message: 'Too many authentication attempts, please try again later.',
   standardHeaders: true,
   legacyHeaders: false,
