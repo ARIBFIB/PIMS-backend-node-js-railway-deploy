@@ -1,4 +1,5 @@
 const { initDatabase, testConnection } = require('../src/config/database');
+const { addSubCategoryTable } = require('./add-subcategory-table');
 
 async function setupRailwayDatabase() {
   console.log('Setting up Railway database...');
@@ -22,6 +23,11 @@ async function setupRailwayDatabase() {
     try {
       await initDatabase();
       console.log('✅ Railway database setup completed successfully!');
+      
+      // Add sub-categories table
+      await addSubCategoryTable();
+      console.log('✅ Sub-categories table added successfully!');
+      
       process.exit(0);
     } catch (error) {
       console.error('❌ Failed to initialize Railway database:', error.message);

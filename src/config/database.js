@@ -128,6 +128,21 @@ async function initDatabase() {
     `);
 
     console.log("✅ Categories table created");
+    
+    // SUB-CATEGORIES (Create after categories)
+    await connection.query(`
+      CREATE TABLE IF NOT EXISTS sub_categories (
+        id INT AUTO_INCREMENT PRIMARY KEY,
+        code VARCHAR(50) NOT NULL UNIQUE,
+        name VARCHAR(255) NOT NULL,
+        categoryId INT NULL,
+        createdAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        updatedAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+        FOREIGN KEY (categoryId) REFERENCES categories(id) ON DELETE SET NULL
+      );
+    `);
+
+    console.log("✅ Sub-categories table created");
 
     // UNIT OF MEASURES (Create before materials that reference it)
     await connection.query(`

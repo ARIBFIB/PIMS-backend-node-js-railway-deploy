@@ -34,6 +34,45 @@ async function runRailwayPostDeploy() {
       console.log('✅ recipeUnit column already exists in recipes table');
     }
     
+    // Check if sub_categories table exists
+    console.log('🔍 Checking if sub_categories table exists...');
+    const [tables] = await connection.execute(
+      "SHOW TABLES LIKE 'sub_categories'"
+    );
+    
+    if (tables.length === 0) {
+      console.log('➕ Creating sub_categories table...');
+      await connection.execute(`
+        CREATE TABLE sub_categories (
+          id INT AUTO_INCREMENT PRIMARY KEY,
+          code VARCHAR(50) NOT NULL UNIQUE,
+          name VARCHAR(255) NOT NULL,
+          categoryId INT NULL,
+          createdAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+          updatedAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+          FOREIGN KEY (categoryId) REFERENCES categories(id) ON DELETE SET NULL
+        )
+      `);
+      console.log('✅ Successfully created sub_categories table');
+    } else {
+      console.log('✅ sub_categories table already exists');
+      
+      // Check if categoryId column allows NULL values
+      const [columns] = await connection.execute("DESCRIBE sub_categories categoryId");
+      if (columns[0] && columns[0].Null === 'NO') {
+        console.log('➕ Updating sub_categories table structure...');
+        await connection.execute(`
+          ALTER TABLE sub_categories 
+          MODIFY categoryId INT NULL,
+          DROP FOREIGN KEY IF EXISTS sub_categories_ibfk_1,
+          ADD CONSTRAINT sub_categories_ibfk_1 FOREIGN KEY (categoryId) REFERENCES categories(id) ON DELETE SET NULL
+        `);
+        console.log('✅ Successfully updated sub_categories table structure');
+      } else {
+        console.log('✅ sub_categories table structure is correct');
+      }
+    }
+    
     await connection.end();
     console.log('✅ Database connection closed');
     console.log('🎉 Railway post-deploy setup completed successfully!');
