@@ -247,6 +247,28 @@ class Material {
   static async delete(id) {
     try {
       console.log('Executing Material.delete for ID:', id);
+      
+      // Check if material is used in any recipe ingredients
+      const [recipeIngredientRows] = await pool.execute(
+        'SELECT COUNT(*) as count FROM recipe_ingredients WHERE materialId = ?',
+        [id]
+      );
+      
+      if (recipeIngredientRows[0].count > 0) {
+        throw new Error(`Cannot delete material. It is used in ${recipeIngredientRows[0].count} recipe(s).`);
+      }
+      
+      // Check if material is used in any purchase order items
+      const [purchaseOrderItemRows] = await pool.execute(
+        'SELECT COUNT(*) as count FROM purchase_order_items WHERE materialId = ?',
+        [id]
+      );
+      
+      if (purchaseOrderItemRows[0].count > 0) {
+        throw new Error(`Cannot delete material. It is used in ${purchaseOrderItemRows[0].count} purchase order(s).`);
+      }
+      
+      // If not used anywhere, proceed with deletion
       const [result] = await pool.execute(
         'DELETE FROM materials WHERE id = ?',
         [id]
@@ -288,6 +310,36 @@ class Material {
       throw error;
     } finally {
       connection.release();
+    }
+  }
+  
+  // New method to check if a material is in use
+  static async isMaterialInUse(id) {
+    try {
+      // Check if material is used in any recipe ingredients
+      const [recipeIngredientRows] = await pool.execute(
+        'SELECT COUNT(*) as count FROM recipe_ingredients WHERE materialId = ?',
+        [id]
+      );
+      
+      if (recipeIngredientRows[0].count > 0) {
+        return { inUse: true, message: `Used in ${recipeIngredientRows[0].count} recipe(s)` };
+      }
+      
+      // Check if material is used in any purchase order items
+      const [purchaseOrderItemRows] = await pool.execute(
+        'SELECT COUNT(*) as count FROM purchase_order_items WHERE materialId = ?',
+        [id]
+      );
+      
+      if (purchaseOrderItemRows[0].count > 0) {
+        return { inUse: true, message: `Used in ${purchaseOrderItemRows[0].count} purchase order(s)` };
+      }
+      
+      return { inUse: false, message: 'Not in use' };
+    } catch (error) {
+      console.error('Error in Material.isMaterialInUse:', error);
+      throw error;
     }
   }
 }

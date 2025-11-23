@@ -130,6 +130,30 @@ const deleteMaterial = async (req, res) => {
     }
   } catch (error) {
     console.error('Delete material error:', error);
+    // Return a more user-friendly error message
+    if (error.message && error.message.includes('Cannot delete material')) {
+      return res.status(400).json({ message: error.message });
+    }
+    res.status(500).json({ message: 'Internal server error' });
+  }
+};
+
+// New endpoint to check if a material is in use
+const checkMaterialUsage = async (req, res) => {
+  try {
+    const { id } = req.params;
+    
+    // Check if material exists
+    const material = await Material.findById(id);
+    if (!material) {
+      return res.status(404).json({ message: 'Material not found' });
+    }
+    
+    // Check if material is in use
+    const usage = await Material.isMaterialInUse(id);
+    res.json(usage);
+  } catch (error) {
+    console.error('Check material usage error:', error);
     res.status(500).json({ message: 'Internal server error' });
   }
 };
@@ -157,5 +181,6 @@ module.exports = {
   updateMaterial,
   deleteMaterial,
   deleteAllMaterials,
-  getLowStockItems
+  getLowStockItems,
+  checkMaterialUsage
 };

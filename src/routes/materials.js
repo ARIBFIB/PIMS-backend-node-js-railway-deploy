@@ -9,6 +9,7 @@ const router = express.Router();
 router.get('/', authenticate, materialController.getAllMaterials);
 router.get('/low-stock', authenticate, materialController.getLowStockItems);
 router.get('/:id', authenticate, materialController.getMaterialById);
+router.get('/:id/usage', authenticate, materialController.checkMaterialUsage);
 
 // CREATE MATERIAL
 router.post(
