@@ -175,9 +175,10 @@ class Material {
     try {
       console.log('Executing Material.getLowStockItems query...');
       const query = `
-        SELECT m.*, c.name as categoryName, u.name as uomName, u.symbol as uomSymbol 
+        SELECT m.*, c.name as categoryName, sc.name as subCategoryName, u.name as uomName, u.symbol as uomSymbol 
         FROM materials m 
         LEFT JOIN categories c ON m.categoryId = c.id 
+        LEFT JOIN sub_categories sc ON m.subCategoryId = sc.id
         LEFT JOIN unit_of_measures u ON m.uomId = u.id 
         WHERE CAST(m.quantity AS DECIMAL(10,2)) <= CAST(m.lowStockThreshold AS DECIMAL(10,2))
       `;
@@ -192,7 +193,7 @@ class Material {
         categoryName: material.categoryName || null,
         uomName: material.uomName || null,
         uomSymbol: material.uomSymbol || null,
-        subCategoryNames: null // We don't have sub-category name in this query
+        subCategoryNames: material.subCategoryName || null
       }));
     } catch (error) {
       console.error('Error in Material.getLowStockItems:', error);
@@ -207,13 +208,30 @@ class Material {
         const [rows] = await pool.execute('SELECT * FROM materials WHERE CAST(quantity AS DECIMAL(10,2)) <= CAST(lowStockThreshold AS DECIMAL(10,2))');
         console.log('Fallback query returned', rows.length, 'rows');
         
-        return rows.map(row => ({
-          ...row,
-          categoryName: null,
-          uomName: null,
-          uomSymbol: null,
-          subCategoryNames: null
+        // For the fallback, we need to get sub-category names separately
+        const materialsWithSubCategories = await Promise.all(rows.map(async (row) => {
+          let subCategoryName = null;
+          if (row.subCategoryId) {
+            try {
+              const [subCatRows] = await pool.execute('SELECT name FROM sub_categories WHERE id = ?', [row.subCategoryId]);
+              if (subCatRows.length > 0) {
+                subCategoryName = subCatRows[0].name;
+              }
+            } catch (subCatError) {
+              console.error('Error fetching sub-category name for fallback:', subCatError);
+            }
+          }
+          
+          return {
+            ...row,
+            categoryName: null,
+            uomName: null,
+            uomSymbol: null,
+            subCategoryNames: subCategoryName
+          };
         }));
+        
+        return materialsWithSubCategories;
       } catch (fallbackError) {
         console.error('Fallback query also failed:', fallbackError);
         throw fallbackError;
