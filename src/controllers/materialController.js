@@ -5,14 +5,7 @@ const getAllMaterials = async (req, res) => {
     const materials = await Material.getAll();
     console.log('Retrieved materials:', materials);
     
-    // Add support for multiple sub-categories in the response
-    const materialsWithSubCategories = materials.map(material => {
-      // For now, we're just returning the existing data
-      // In the future, we could enhance this to include multiple sub-category names
-      return material;
-    });
-    
-    res.json(materialsWithSubCategories);
+    res.json(materials);
   } catch (error) {
     console.error('Get materials error:', error);
     res.status(500).json({ message: 'Internal server error' });
@@ -39,26 +32,11 @@ const getMaterialById = async (req, res) => {
 const createMaterial = async (req, res) => {
   try {
     console.log('Received data for create:', req.body);
-    const { name, categoryId, subCategoryIds, uomId, lowStockThreshold } = req.body;
+    const { name, categoryId, subCategoryId, uomId, lowStockThreshold } = req.body;
     
     // Validate input
     if (!name || lowStockThreshold === undefined) {
       return res.status(400).json({ message: 'Name and Low Stock Threshold are required' });
-    }
-    
-    // For now, we'll only store the first sub-category ID since the DB column is INT
-    // In the future, we might need to create a many-to-many relationship table
-    let subCategoryId = null;
-    if (subCategoryIds) {
-      // If it's a comma-separated string, take the first one
-      if (typeof subCategoryIds === 'string') {
-        const ids = subCategoryIds.split(',').map(id => id.trim()).filter(id => id);
-        if (ids.length > 0) {
-          subCategoryId = ids[0]; // Only take the first one for now
-        }
-      } else {
-        subCategoryId = subCategoryIds;
-      }
     }
     
     const material = await Material.create({
@@ -68,7 +46,7 @@ const createMaterial = async (req, res) => {
       unitPrice: 0,
       lowStockThreshold: parseFloat(lowStockThreshold),
       categoryId: categoryId || null,
-      subCategoryId: subCategoryId || null,
+      subCategoryId: subCategoryId || null, // Changed from subCategoryIds to subCategoryId
       uomId: uomId || null
     });
     
@@ -84,7 +62,7 @@ const updateMaterial = async (req, res) => {
   try {
     console.log('Received data for update:', req.body);
     const { id } = req.params;
-    const { name, categoryId, subCategoryIds, uomId, lowStockThreshold } = req.body;
+    const { name, categoryId, subCategoryId, uomId, lowStockThreshold } = req.body;
     
     // Build update object with only provided fields
     const updateData = {};
@@ -92,25 +70,7 @@ const updateMaterial = async (req, res) => {
     if (lowStockThreshold !== undefined) updateData.lowStockThreshold = parseFloat(lowStockThreshold);
     if (categoryId !== undefined) updateData.categoryId = categoryId;
     if (uomId !== undefined) updateData.uomId = uomId;
-    
-    // Handle sub-category IDs
-    if (subCategoryIds !== undefined) {
-      // For now, we'll only store the first sub-category ID since the DB column is INT
-      // In the future, we might need to create a many-to-many relationship table
-      let subCategoryId = null;
-      if (subCategoryIds) {
-        // If it's a comma-separated string, take the first one
-        if (typeof subCategoryIds === 'string') {
-          const ids = subCategoryIds.split(',').map(id => id.trim()).filter(id => id);
-          if (ids.length > 0) {
-            subCategoryId = ids[0]; // Only take the first one for now
-          }
-        } else {
-          subCategoryId = subCategoryIds;
-        }
-      }
-      updateData.subCategoryId = subCategoryId;
-    }
+    if (subCategoryId !== undefined) updateData.subCategoryId = subCategoryId; // Changed from subCategoryIds to subCategoryId
     
     // Validate that at least one field is provided
     if (Object.keys(updateData).length === 0) {
