@@ -52,6 +52,12 @@ const getLowStockReport = async (req, res) => {
   try {
     const materials = await Material.getLowStockItems();
     
+    // Log the materials to see what sub-category data is being returned
+    console.log('Low stock report items retrieved:', materials.length);
+    if (materials.length > 0) {
+      console.log('First few low stock report items with sub-category data:', materials.slice(0, 3));
+    }
+    
     // Add status to each material - all items in low stock report should be LOW STOCK
     const materialsWithStatus = materials.map(material => ({
       ...material,

@@ -186,6 +186,11 @@ class Material {
       const [rows] = await pool.execute(query);
       console.log('Material.getLowStockItems query returned', rows.length, 'rows');
       
+      // Log the first few rows to debug sub-category information
+      if (rows.length > 0) {
+        console.log('First few low stock items:', rows.slice(0, 3));
+      }
+      
       // For now, return the data as is since we're not actually storing multiple sub-categories
       // The frontend will handle the UI for multiple selection but we'll only store one in the DB
       return rows.map(material => ({
